@@ -1,0 +1,1 @@
+{"version":"0.1.0","name":"voting_blinks","instructions":[{"name":"submitVote","accounts":[{"name":"user","isMut":true,"isSigner":true}],"args":[{"name":"submissionId","type":"u64"}]}],"events":[{"name":"VoteSubmitted","fields":[{"name":"submissionId","type":"u64","index":false},{"name":"userWallet","type":"publicKey","index":false}]}]}

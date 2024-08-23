@@ -138,6 +138,15 @@ const postHandler = async (req: NextApiRequest, res: NextApiResponse) => {
       console.error('Invalid "account" provided', err);
       return res.status(400).json({ error: 'Invalid "account" provided' });
     }
+
+    let challengePublicKey: PublicKey;
+    try {
+      challengePublicKey = new PublicKey(validChallengeId);
+      console.log("Challenge Public Key:", challengePublicKey.toString());
+    } catch (err) {
+      console.error('Invalid challenge public key', err);
+      return res.status(400).json({ error: 'Invalid challenge public key' });
+    }
     
     let ixs: web3.TransactionInstruction[] = [];
 

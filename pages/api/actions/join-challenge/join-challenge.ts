@@ -28,7 +28,7 @@ interface CustomActionPostRequest extends SolanaActionPostRequest {
 
 const getHandler = async (req: NextApiRequest, res: NextApiResponse) => {
   try {
-    const requestUrl = new URL(req.url as string, `https://${req.headers.host}`);
+    const requestUrl = new URL(req.url as string, `http://${req.headers.host}`);
     const challengeID = requestUrl.searchParams.get("challengeID");
 
     if (!challengeID) {
@@ -116,10 +116,10 @@ const postHandler = async (req: NextApiRequest, res: NextApiResponse) => {
     let ixs: web3.TransactionInstruction[] = [];
 
     const instruction = await program.methods
-      .joinChallenge(new anchor.BN(challenge_id))
+      .joinChallenge(new anchor.BN(validChallengeId))
       .accounts({
         user: account,
-        challenge: new PublicKey(challenge_id),
+        challenge: new PublicKey(validChallengeId),
       })
       .instruction();
 
@@ -127,7 +127,7 @@ const postHandler = async (req: NextApiRequest, res: NextApiResponse) => {
     const { blockhash } = await connection.getLatestBlockhash();
     const transaction = new web3.VersionedTransaction(
       new web3.TransactionMessage({
-        payerKey: new web3.PublicKey(account),
+        payerKey: account,
         recentBlockhash: blockhash,
         instructions: ixs,
       }).compileToV0Message()

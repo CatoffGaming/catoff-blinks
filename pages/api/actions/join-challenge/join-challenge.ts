@@ -69,7 +69,8 @@ const getHandler = async (req: NextApiRequest, res: NextApiResponse) => {
       requestUrl.origin
     ).toString();
 
-    const challengeIDFromResponse = challenge.ID || challenge.id;
+    const challengeIDFromResponse = challenge.challenge_ID || challenge.id || challenge.ID || challengeID;
+    console.log("Challenge ID from Response:", challengeIDFromResponse);
     if (!challengeIDFromResponse) {
       return res.status(400).json({ error: 'Invalid challenge ID in the response' });
     }

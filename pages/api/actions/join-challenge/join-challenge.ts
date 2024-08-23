@@ -5,64 +5,76 @@ import {
   ActionGetResponse,
   ActionPostRequest as SolanaActionPostRequest,
 } from "@solana/actions";
-import { PublicKey, VersionedTransaction } from "@solana/web3.js";
+import { Cubik } from "@cubik-so/sdk";
+import {
+  clusterApiUrl,
+  Connection,
+  PublicKey,
+  Transaction,
+  TransactionInstruction,
+} from "@solana/web3.js";
+import * as web3 from "@solana/web3.js";
 import BN from "bn.js";
 import type { NextApiRequest, NextApiResponse } from "next";
 import * as anchor from "@project-serum/anchor";
 import nextCors from "nextjs-cors";
 import fetch from "node-fetch";
-import {
-  connection,
-  program,
-  programId,
-} from "./join-challenge/idl"; // Adjust the import path according to your project structure
-import {
-  createAssociatedTokenAccount,
-  TOKEN_PROGRAM_ID,
-} from "@solana/spl-token";
-
-const secretKeyData = process.env.secretKeyData || [];
-const secretKey = new Uint8Array(secretKeyData);
-const adminkeypair = anchor.web3.Keypair.fromSecretKey(secretKey);
+import { connection, program, programId } from "./idl";
 
 interface CustomActionPostRequest extends SolanaActionPostRequest {
-  challenge_id?: string;
-  wager_amount?: string;
-  currency?: string;
-  media?: string;
+  challenge_id?: string | number | string[];
 }
 
 const getHandler = async (req: NextApiRequest, res: NextApiResponse) => {
   try {
     const requestUrl = new URL(req.url as string, `https://${req.headers.host}`);
-    console.log(requestUrl);
     const challengeID = requestUrl.searchParams.get("challengeID");
-    const wagerAmount = requestUrl.searchParams.get("wager_amount");
-    const currency = requestUrl.searchParams.get("currency");
-    const media = requestUrl.searchParams.get("media");
 
-    if (!challengeID || !wagerAmount || !currency || !media) {
+    if (!challengeID) {
       return res.status(400).json({
-        error: 'Missing one or more required parameters: "challengeID", "wager_amount", "currency", "media"',
+        error: 'Missing "challengeID" parameter',
       });
     }
 
-    const baseHref = new URL("/api/actions/join-challenge", requestUrl.origin).toString();
+    // Ensure absolute URL for fetching challenge details
+    const challengeResponse = await fetch(
+      `https://apiv2.catoff.xyz/player/challenge/${challengeID}`,
+      {
+        headers: {
+          accept: "application/json",
+        },
+      }
+    );
 
-    const action = {
-      label: "Join Challenge",
-      href: `${baseHref}?challenge_id=${challengeID}&wager_amount=${wagerAmount}&currency=${currency}&media=${media}`,
-    };
+    if (!challengeResponse.ok) {
+      throw new Error("Failed to fetch challenge details");
+    }
+
+    const responseJson = await challengeResponse.json() as { data: any };
+    const { data: challenge } = responseJson;
+
+    const baseHref = new URL(
+      "/api/actions/join-challenge",
+      requestUrl.origin
+    ).toString();
+
+    const actions = [{
+      label: `Join Challenge ${challenge.ID}`,
+      href: `${baseHref}?challenge_id=${challenge.ID}`,
+    }];
+
+    const iconUrl = new URL(challenge.MediaUrl, requestUrl.origin).toString();
 
     const payload: ActionGetResponse = {
-      title: "Join the Challenge",
-      icon: media,
-      description: "Join the challenge directly from here",
-      label: "Join Challenge",
+      title: "Join Challenge",
+      icon: iconUrl,
+      description: "Join the challenge on-chain",
+      label: "Join",
       links: {
-        actions: [action],
+        actions: actions,
       },
     };
+
     res.status(200).json(payload);
   } catch (err) {
     console.error(err);
@@ -75,21 +87,24 @@ const getHandler = async (req: NextApiRequest, res: NextApiResponse) => {
 const postHandler = async (req: NextApiRequest, res: NextApiResponse) => {
   try {
     const body: CustomActionPostRequest = req.body;
-    console.log(body);
 
-    const challengeID = body.challenge_id || req.query.challenge_id;
-    const wagerAmountStr = body.wager_amount || req.query.wager_amount;
-    const currency = body.currency || req.query.currency;
-    const media = body.media || req.query.media;
+    let challenge_id: string | number | string[] | undefined =
+      body.challenge_id || req.query.challenge_id;
 
-    if (!challengeID || !wagerAmountStr || !currency || !media) {
-      return res.status(400).json({
-        error: 'Missing one or more required parameters: "challenge_id", "wager_amount", "currency", "media"',
-      });
+    if (typeof challenge_id === "undefined") {
+      return res.status(400).json({ error: '"challenge_id" is required' });
     }
 
-    const wagerAmount = new anchor.BN(parseInt(wagerAmountStr) * 1_000_000_000);
-    const challengeId = new anchor.BN(challengeID);
+    if (Array.isArray(challenge_id)) {
+      return res
+        .status(400)
+        .json({ error: '"challenge_id" cannot be an array' });
+    }
+
+    const validChallengeId: string | number =
+      typeof challenge_id === "string" || typeof challenge_id === "number"
+        ? challenge_id
+        : String(challenge_id);
 
     let account: PublicKey;
     try {
@@ -97,42 +112,32 @@ const postHandler = async (req: NextApiRequest, res: NextApiResponse) => {
     } catch (err) {
       return res.status(400).json({ error: 'Invalid "account" provided' });
     }
-
-    let ixs: anchor.web3.TransactionInstruction[] = [];
-    const escrowAccountPublicKey = new PublicKey(process.env.ESCROW_PUBLIC_KEY);
-    const tokenMintAddress = new PublicKey("9KRfR9qhnNNvmyyhCteJCmycAcUThwSfCRd65rUJcD3L");
-
-    const userPublickey = new PublicKey(account);
-    const userTokenAccount = await getAssociatedTokenAccount(account, tokenMintAddress);
-    const escrowTokenAccount = await getAssociatedTokenAccount(escrowAccountPublicKey, tokenMintAddress);
+    let ixs: web3.TransactionInstruction[] = [];
 
     const instruction = await program.methods
-      .participate(currency, wagerAmount, challengeId, new anchor.BN(0)) // Assuming playerId is not required here
+      .joinChallenge(new anchor.BN(challenge_id))
       .accounts({
-        user: userPublickey,
-        userTokenAccount: userTokenAccount,
-        escrowTokenAccount: escrowTokenAccount,
-        escrowAccount: escrowAccountPublicKey,
-        systemProgram: anchor.web3.SystemProgram.programId,
-        tokenProgram: TOKEN_PROGRAM_ID,
+        user: account,
+        challenge: new PublicKey(challenge_id),
       })
       .instruction();
 
     ixs.push(instruction);
-
     const { blockhash } = await connection.getLatestBlockhash();
-    const transaction = new VersionedTransaction(
-      new anchor.web3.TransactionMessage({
-        payerKey: new PublicKey(account),
+    const transaction = new web3.VersionedTransaction(
+      new web3.TransactionMessage({
+        payerKey: new web3.PublicKey(account),
         recentBlockhash: blockhash,
         instructions: ixs,
       }).compileToV0Message()
     );
 
     const serializedTransaction = transaction.serialize();
-    const base64Transaction = Buffer.from(serializedTransaction).toString("base64");
+    const base64Transaction = Buffer.from(serializedTransaction).toString(
+      "base64"
+    );
+    const message = `You have joined the challenge successfully`;
 
-    const message = `You have joined the challenge!`;
     return res.status(200).send({ transaction: base64Transaction, message });
   } catch (err) {
     console.error(err);
@@ -142,31 +147,12 @@ const postHandler = async (req: NextApiRequest, res: NextApiResponse) => {
   }
 };
 
-async function getAssociatedTokenAccount(addr: any, tokenMintAddress: any) {
-  const Accountaddress = new PublicKey(addr);
-  const tokenList = await connection.getTokenAccountsByOwner(Accountaddress, {
-    mint: new PublicKey(tokenMintAddress),
-  });
-  let associatedTokenAccount = null;
-  if (tokenList.value.length > 0) {
-    const tokenAccountInfo = tokenList.value[0];
-    associatedTokenAccount = tokenAccountInfo.pubkey;
-  } else {
-    associatedTokenAccount = await createAssociatedTokenAccount(
-      program.provider.connection,
-      adminkeypair,
-      new PublicKey(tokenMintAddress),
-      Accountaddress
-    );
-  }
-  return associatedTokenAccount;
-}
-
 export default async (req: NextApiRequest, res: NextApiResponse) => {
+  // Apply CORS middleware to all requests
   await nextCors(req, res, {
     methods: ["GET", "POST"],
-    origin: "*", // Change this to your frontend URL in production
-    optionsSuccessStatus: 200, // Some legacy browsers (IE11, various SmartTVs) choke on 204
+    origin: "*",
+    optionsSuccessStatus: 200,
   });
 
   if (req.method === "GET") {

@@ -88,15 +88,21 @@ const getHandler = async (req: NextApiRequest, res: NextApiResponse) => {
 const postHandler = async (req: NextApiRequest, res: NextApiResponse) => {
   try {
     const body: CustomActionPostRequest = req.body;
+    
+    console.log("Request Body:", body);
 
     let challenge_id: string | number | string[] | undefined =
       body.challenge_id || req.query.challenge_id;
 
+    console.log("Challenge ID:", challenge_id);
+
     if (typeof challenge_id === "undefined") {
+      console.error('Challenge ID is undefined');
       return res.status(400).json({ error: '"challenge_id" is required' });
     }
 
     if (Array.isArray(challenge_id)) {
+      console.error('Challenge ID is an array');
       return res
         .status(400)
         .json({ error: '"challenge_id" cannot be an array' });
@@ -107,24 +113,36 @@ const postHandler = async (req: NextApiRequest, res: NextApiResponse) => {
         ? challenge_id
         : String(challenge_id);
 
+    console.log("Valid Challenge ID:", validChallengeId);
+
     let account: PublicKey;
     try {
       account = new PublicKey(body.account);
+      console.log("Account:", account.toString());
     } catch (err) {
+      console.error('Invalid "account" provided', err);
       return res.status(400).json({ error: 'Invalid "account" provided' });
     }
+    
     let ixs: web3.TransactionInstruction[] = [];
 
-    const instruction = await program.methods
-      .joinChallenge(new anchor.BN(validChallengeId))
-      .accounts({
-        user: account,
-        challenge: new PublicKey(validChallengeId),
-      })
-      .instruction();
+    try {
+      const instruction = await program.methods
+        .joinChallenge(new anchor.BN(validChallengeId))
+        .accounts({
+          user: account,
+          challenge: new PublicKey(validChallengeId),
+        })
+        .instruction();
+      ixs.push(instruction);
+    } catch (err) {
+      console.error('Error creating joinChallenge instruction', err);
+      return res.status(400).json({ error: 'Failed to create instruction' });
+    }
 
-    ixs.push(instruction);
     const { blockhash } = await connection.getLatestBlockhash();
+    console.log("Blockhash:", blockhash);
+
     const transaction = new web3.VersionedTransaction(
       new web3.TransactionMessage({
         payerKey: account,
@@ -132,6 +150,7 @@ const postHandler = async (req: NextApiRequest, res: NextApiResponse) => {
         instructions: ixs,
       }).compileToV0Message()
     );
+    
 
     const serializedTransaction = transaction.serialize();
     const base64Transaction = Buffer.from(serializedTransaction).toString(
@@ -139,9 +158,11 @@ const postHandler = async (req: NextApiRequest, res: NextApiResponse) => {
     );
     const message = `You have joined the challenge successfully`;
 
+    console.log("Transaction prepared successfully");
+
     return res.status(200).send({ transaction: base64Transaction, message });
   } catch (err) {
-    console.error(err);
+    console.error('An error occurred', err);
     let message = "An unknown error occurred";
     if (typeof err === "string") message = err;
     res.status(400).json({ error: message });

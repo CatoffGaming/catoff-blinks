@@ -1,6 +1,7 @@
 import {
   ActionPostResponse,
   ACTIONS_CORS_HEADERS,
+  CustomActionPostRequest,
   createPostResponse,
   ActionGetResponse,
   ActionPostRequest as SolanaActionPostRequest,
@@ -38,7 +39,7 @@ const getHandler = async (req: NextApiRequest, res: NextApiResponse) => {
 
     // Ensure absolute URL for fetching challenge details
     const challengeResponse = await fetch(
-      `https://apiv2.catoff.xyz/player/challenge/${challengeID}`,
+      `https://apiv2.catoff.xyz/challenge/${challengeID}`,
       {
         headers: {
           accept: "application/json",

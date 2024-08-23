@@ -54,8 +54,13 @@ const getHandler = async (req: NextApiRequest, res: NextApiResponse) => {
       throw new Error("Failed to fetch challenge details");
     }
 
-    const responseJson = await challengeResponse.json() as { data: any };
-    const { data: challenge } = responseJson;
+    const responseJson = await challengeResponse.json();
+    console.log("API Response JSON:", responseJson);
+
+    const challenge = responseJson.data;
+    if (!challenge) {
+      return res.status(400).json({ error: 'Challenge data not found in the response' });
+    }
 
     console.log("Fetched Challenge Data:", challenge);
 
@@ -64,12 +69,18 @@ const getHandler = async (req: NextApiRequest, res: NextApiResponse) => {
       requestUrl.origin
     ).toString();
 
+    const challengeIDFromResponse = challenge.ID || challenge.id;
+    if (!challengeIDFromResponse) {
+      return res.status(400).json({ error: 'Invalid challenge ID in the response' });
+    }
+
     const actions = [{
-      label: `Join Challenge ${challenge.ID}`,
-      href: `${baseHref}?challenge_id=${challenge.ID}`,
+      label: `Join Challenge ${challengeIDFromResponse}`,
+      href: `${baseHref}?challenge_id=${challengeIDFromResponse}`,
     }];
 
-    const iconUrl = new URL(challenge.MediaUrl  || 'defaultIconPath.png', requestUrl.origin).toString();
+    const iconUrl = challenge.MediaUrl ? new URL(challenge.MediaUrl, requestUrl.origin).toString() : "http://localhost:3000/defaultIconPath.png";
+    console.log("Constructed Icon URL:", iconUrl);
 
     const payload: ActionGetResponse = {
       title: "Join Challenge",
@@ -84,9 +95,7 @@ const getHandler = async (req: NextApiRequest, res: NextApiResponse) => {
     res.status(200).json(payload);
   } catch (err) {
     console.error("Error in getHandler:", err);
-    let message = "An unknown error occurred";
-    if (typeof err === "string") message = err;
-    res.status(400).json({ error: message });
+    res.status(400).json({ error: "An unknown error occurred" });
   }
 };
 

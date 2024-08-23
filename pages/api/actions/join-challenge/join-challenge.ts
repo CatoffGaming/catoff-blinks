@@ -5,24 +5,17 @@ import {
   ActionGetResponse,
   ActionPostRequest as SolanaActionPostRequest,
 } from "@solana/actions";
-import { Cubik } from "@cubik-so/sdk";
-import {
-  clusterApiUrl,
-  Connection,
-  Keypair,
-  PublicKey,
-  SystemProgram,
-  Transaction,
-  TransactionInstruction,
-  TransactionMessage,
-  VersionedTransaction,
-} from "@solana/web3.js";
+import { PublicKey, VersionedTransaction } from "@solana/web3.js";
 import BN from "bn.js";
 import type { NextApiRequest, NextApiResponse } from "next";
 import * as anchor from "@project-serum/anchor";
 import nextCors from "nextjs-cors";
 import fetch from "node-fetch";
-import { connection, program, programId } from "./idl";
+import {
+  connection,
+  program,
+  programId,
+} from "./join-challenge/idl"; // Adjust the import path according to your project structure
 import {
   createAssociatedTokenAccount,
   TOKEN_PROGRAM_ID,
@@ -30,8 +23,7 @@ import {
 
 const secretKeyData = process.env.secretKeyData || [];
 const secretKey = new Uint8Array(secretKeyData);
-// Generate the Keypair
-const adminkeypair = Keypair.fromSecretKey(secretKey);
+const adminkeypair = anchor.web3.Keypair.fromSecretKey(secretKey);
 
 interface CustomActionPostRequest extends SolanaActionPostRequest {
   challenge_id?: string;
@@ -51,7 +43,7 @@ const getHandler = async (req: NextApiRequest, res: NextApiResponse) => {
 
     if (!challengeID || !wagerAmount || !currency || !media) {
       return res.status(400).json({
-        error: 'Missing one or more of the required parameters: "challengeID", "wager_amount", "currency", "media"',
+        error: 'Missing one or more required parameters: "challengeID", "wager_amount", "currency", "media"',
       });
     }
 
@@ -92,7 +84,7 @@ const postHandler = async (req: NextApiRequest, res: NextApiResponse) => {
 
     if (!challengeID || !wagerAmountStr || !currency || !media) {
       return res.status(400).json({
-        error: 'Missing one or more of the required parameters: "challenge_id", "wager_amount", "currency", "media"',
+        error: 'Missing one or more required parameters: "challenge_id", "wager_amount", "currency", "media"',
       });
     }
 
@@ -106,9 +98,9 @@ const postHandler = async (req: NextApiRequest, res: NextApiResponse) => {
       return res.status(400).json({ error: 'Invalid "account" provided' });
     }
 
-    let ixs: TransactionInstruction[] = [];
+    let ixs: anchor.web3.TransactionInstruction[] = [];
     const escrowAccountPublicKey = new PublicKey(process.env.ESCROW_PUBLIC_KEY);
-    const tokenMintAddress = new PublicKey("9KRfR9qhnNNvmyyhCteJCmycAcUThwSfCRd65rUJcD3L"); // Replace with appropriate Mint Address for the currency
+    const tokenMintAddress = new PublicKey("9KRfR9qhnNNvmyyhCteJCmycAcUThwSfCRd65rUJcD3L");
 
     const userPublickey = new PublicKey(account);
     const userTokenAccount = await getAssociatedTokenAccount(account, tokenMintAddress);
@@ -121,7 +113,7 @@ const postHandler = async (req: NextApiRequest, res: NextApiResponse) => {
         userTokenAccount: userTokenAccount,
         escrowTokenAccount: escrowTokenAccount,
         escrowAccount: escrowAccountPublicKey,
-        systemProgram: SystemProgram.programId,
+        systemProgram: anchor.web3.SystemProgram.programId,
         tokenProgram: TOKEN_PROGRAM_ID,
       })
       .instruction();
@@ -130,7 +122,7 @@ const postHandler = async (req: NextApiRequest, res: NextApiResponse) => {
 
     const { blockhash } = await connection.getLatestBlockhash();
     const transaction = new VersionedTransaction(
-      new TransactionMessage({
+      new anchor.web3.TransactionMessage({
         payerKey: new PublicKey(account),
         recentBlockhash: blockhash,
         instructions: ixs,

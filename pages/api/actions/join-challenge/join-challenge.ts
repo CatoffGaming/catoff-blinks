@@ -31,6 +31,9 @@ const getHandler = async (req: NextApiRequest, res: NextApiResponse) => {
     const requestUrl = new URL(req.url as string, `http://${req.headers.host}`);
     const challengeID = requestUrl.searchParams.get("challengeID");
 
+    console.log("Request URL:", requestUrl.toString());
+    console.log("Extracted challengeID:", challengeID);
+
     if (!challengeID) {
       return res.status(400).json({
         error: 'Missing "challengeID" parameter',
@@ -54,6 +57,8 @@ const getHandler = async (req: NextApiRequest, res: NextApiResponse) => {
     const responseJson = await challengeResponse.json() as { data: any };
     const { data: challenge } = responseJson;
 
+    console.log("Fetched Challenge Data:", challenge);
+
     const baseHref = new URL(
       "/api/actions/join-challenge/join-challenge",
       requestUrl.origin
@@ -64,7 +69,7 @@ const getHandler = async (req: NextApiRequest, res: NextApiResponse) => {
       href: `${baseHref}?challenge_id=${challenge.ID}`,
     }];
 
-    const iconUrl = new URL(challenge.MediaUrl, requestUrl.origin).toString();
+    const iconUrl = new URL(challenge.MediaUrl  || 'defaultIconPath.png', requestUrl.origin).toString();
 
     const payload: ActionGetResponse = {
       title: "Join Challenge",
@@ -78,7 +83,7 @@ const getHandler = async (req: NextApiRequest, res: NextApiResponse) => {
 
     res.status(200).json(payload);
   } catch (err) {
-    console.error(err);
+    console.error("Error in getHandler:", err);
     let message = "An unknown error occurred";
     if (typeof err === "string") message = err;
     res.status(400).json({ error: message });

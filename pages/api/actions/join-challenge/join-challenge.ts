@@ -55,7 +55,7 @@ const getHandler = async (req: NextApiRequest, res: NextApiResponse) => {
     const { data: challenge } = responseJson;
 
     const baseHref = new URL(
-      "/api/actions/join-challenge",
+      "/api/actions/join-challenge/join-challenge",
       requestUrl.origin
     ).toString();
 

@@ -21,6 +21,7 @@ import * as anchor from "@project-serum/anchor";
 import nextCors from "nextjs-cors";
 import fetch from "node-fetch";
 import { connection, program, programId } from "./idl";
+import { getChallengePublicKey } from "./challengeMapping";
 
 interface CustomActionPostRequest extends SolanaActionPostRequest {
   challenge_id?: string | number | string[];

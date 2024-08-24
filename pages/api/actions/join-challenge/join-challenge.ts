@@ -123,10 +123,8 @@ const postHandler = async (req: NextApiRequest, res: NextApiResponse) => {
         .json({ error: '"challenge_id" cannot be an array' });
     }
 
-    const validChallengeId: string = typeof challenge_id === "string" || typeof challenge_id === "number"
-      ? challenge_id.toString()
-      : challenge_id;
     
+    const validChallengeId: string = challenge_id.toString();
     console.log("Valid Challenge ID (string):", validChallengeId);
 
     let account: PublicKey;
@@ -138,14 +136,13 @@ const postHandler = async (req: NextApiRequest, res: NextApiResponse) => {
       return res.status(400).json({ error: 'Invalid "account" provided' });
     }
 
-    let challengePublicKey: PublicKey;
-    try {
-      challengePublicKey = new PublicKey(validChallengeId);
-      console.log("Challenge Public Key:", challengePublicKey.toString());
-    } catch (err) {
-      console.error('Invalid challenge public key', err);
-      return res.status(400).json({ error: 'Invalid challenge public key' });
+    const challengePublicKey = getChallengePublicKey(validChallengeId);
+    if (!challengePublicKey) {
+      console.error('Invalid challenge public key for given challenge_id');
+      return res.status(400).json({ error: 'No valid Solana public key mapping found for provided "challenge_id".' });
     }
+
+    console.log("Challenge Public Key:", challengePublicKey.toString());
     
     let ixs: web3.TransactionInstruction[] = [];
 

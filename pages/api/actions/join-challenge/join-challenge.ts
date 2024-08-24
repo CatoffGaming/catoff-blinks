@@ -123,12 +123,11 @@ const postHandler = async (req: NextApiRequest, res: NextApiResponse) => {
         .json({ error: '"challenge_id" cannot be an array' });
     }
 
-    const validChallengeId: string | number =
-      typeof challenge_id === "string" || typeof challenge_id === "number"
-        ? challenge_id
-        : String(challenge_id);
-
-    console.log("Valid Challenge ID:", validChallengeId);
+    const validChallengeId: string = typeof challenge_id === "string" || typeof challenge_id === "number"
+      ? challenge_id.toString()
+      : challenge_id;
+    
+    console.log("Valid Challenge ID (string):", validChallengeId);
 
     let account: PublicKey;
     try {

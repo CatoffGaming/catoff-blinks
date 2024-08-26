@@ -1,13 +1,10 @@
 import axios from "axios";
 
-export function Responsify<T>(
-  req: Promise<ApiResponse<T>>,
-  panic: boolean = false
-): Promise<T | ApiResponse<T>> {
+export function Responsify<T>(req: Promise<ApiResponse<T>>, panic: boolean = false): Promise<T | ApiResponse<T>> {
   return new Promise(async (resolve, reject) => {
     try {
       const response = await req;
-
+      
       if (!response.success) {
         if (panic) {
           // Throw an error if panic is true and success is false
@@ -26,7 +23,7 @@ export function Responsify<T>(
         reject(error);
       } else {
         // Handle unexpected errors
-        reject(new Error("Unexpected error occurred."));
+        reject(new Error('Unexpected error occurred.'));
       }
     }
   });
@@ -421,19 +418,4 @@ export interface IChallengeById {
   Game: Game;
   ChallengeWinner: User[];
   Players: PlayerWithDetails[];
-}
-
-export interface ICreateChallenge {
-  ChallengeName: string;
-  ChallengeDescription: string;
-  StartDate: number;
-  EndDate: number;
-  GameID: number;
-  Wager: number;
-  Target: number;
-  IsPrivate: boolean; //keep it always false
-  Currency: VERIFIED_CURRENCY; //keep it VERIFIED_CURRENCY.SOL
-  ChallengeCategory: CHALLENGE_CATEGORIES; //keep it CHALLENGE_CATEGORIES.SOCIAL_MEDIA
-  NFTMedia: "string"; // create using ai -> ipfs
-  Media: "string"; // baad mey
 }

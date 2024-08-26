@@ -221,7 +221,7 @@ const postHandler = async (req: NextApiRequest, res: NextApiResponse) => {
     const base64Transaction = Buffer.from(serializedTransaction).toString(
       "base64"
     );
-    const message = `Your bet has been placed!`;
+    const message = `Congratulations! You've joined the challenge`;
     return res.status(200).send({ transaction: base64Transaction, message });
   } catch (err) {
     console.error("An error occurred", err);

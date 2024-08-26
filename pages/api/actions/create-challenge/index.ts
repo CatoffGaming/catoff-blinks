@@ -12,6 +12,7 @@ import { ApiResponse, IChallengeById, PARTICIPATION_TYPE } from "./types";
 import axios from "axios";
 import { getAssociatedTokenAccount, web3Constants, IWeb3Participate, initWeb3 } from './helper'
 import { PublicKey, SystemProgram } from "@solana/web3.js";
+import { ICreateChallenge } from "../join-challenge/types";
 
 const getHandler = async (req: NextApiRequest, res: NextApiResponse) => {
   try {
@@ -218,6 +219,12 @@ const postHandler = async (req: NextApiRequest, res: NextApiResponse) => {
     // const base64Transaction = Buffer.from(serializedTransaction).toString(
     //   "base64"
     // );
+
+
+    const createChallengeJson: ICreateChallenge = {
+      
+    }
+
     const message = `Your bet has been placed!`;
     return res.status(200).send({ transaction: base64Transaction, message });
   } catch (err) {

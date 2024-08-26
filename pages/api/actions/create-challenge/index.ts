@@ -222,8 +222,23 @@ const postHandler = async (req: NextApiRequest, res: NextApiResponse) => {
 
 
     const createChallengeJson: ICreateChallenge = {
-      
-    }
+      name: req.query.name as string,
+      wager: req.query.wager as string,
+      target: req.query.target as string,
+      startTime: req.query.startTime as string,
+      duration: req.query.duration as string,
+      creator: {
+        id: "Agar chahiye ho to",
+        walletAddress: req.body.walletAddress as string, 
+      },
+      participants: [],
+      reward: {
+        type: "SOL", 
+        amount: req.query.wager as string 
+      }
+    };
+
+    console.log("Challenge JSON:", createChallengeJson);
 
     const message = `Your bet has been placed!`;
     return res.status(200).send({ transaction: base64Transaction, message });

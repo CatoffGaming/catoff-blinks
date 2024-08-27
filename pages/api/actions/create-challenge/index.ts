@@ -102,52 +102,25 @@ const postHandler = async (req: NextApiRequest, res: NextApiResponse) => {
 
     if (!account) {
       console.error("Account not found in body");
-      return res.status(400).json({
-        error: 'Invalid "account" provided',
-      });
+      return res.status(400).json({ error: 'Invalid "account" provided' });
     }
 
     if (!text) {
       console.error("Text not found in body");
-      return res.status(400).json({
-        error: 'Missing "text" parameter',
-      });
+      return res.status(400).json({ error: 'Missing "text" parameter' });
     }
 
-    const {
-      name,
-      wager,
-      target,
-      startTime,
-      duration,
-      walletAddress,
-    } = req.query;
+    const { name, wager, target, startTime, duration, walletAddress } = req.query;
     console.log("Received query parameters:", { name, wager, target, startTime, duration, walletAddress });
 
     if (!walletAddress || Array.isArray(walletAddress)) {
-      console.error("walletAddress is missing or invalid:", walletAddress);
-      return res.status(400).json({
-        error: 'Invalid "walletAddress" provided',
-      });
+      console.error('walletAddress is missing or invalid:', walletAddress);
+      return res.status(400).json({ error: 'Invalid "walletAddress" provided' });
     }
 
-    if (
-      !name ||
-      !wager ||
-      !target ||
-      !startTime ||
-      !duration
-    ) {
-      console.error("Missing required parameters", {
-        name,
-        wager,
-        target,
-        startTime,
-        duration,
-      });
-      return res.status(400).json({
-        error: "Missing required parameters",
-      });
+    if (!name || !wager || !target || !startTime || !duration) {
+      console.error('Missing required parameters', { name, wager, target, startTime, duration });
+      return res.status(400).json({ error: 'Missing required parameters' });
     }
 
     const accountPublicKey = new PublicKey(account);
@@ -162,16 +135,13 @@ const postHandler = async (req: NextApiRequest, res: NextApiResponse) => {
     const absoluteStartTime = Math.floor((Date.now() + startTimeMillis) / 1000); // In seconds
     const durationInSeconds = Math.floor(durationMillis / 1000);
 
-    // Convert wager to BN and store in variable 
-    const wagerBN = new BN(Number(wager) * 10 ** 9); // Sol to Lamports conversion
-
     const createChallengeJson = {
       text,
       name: name as string,
       target: target as string,
       start_time: absoluteStartTime,
       duration: durationInSeconds,
-      wager: wagerBN, // Use the BN variable for wager
+      wager: parseInt(wager as string, 10) * 10 ** 9 // Convert to Lamports and keep as a normal number
     };
 
     console.log("Challenge JSON:", createChallengeJson);
@@ -191,7 +161,7 @@ const postHandler = async (req: NextApiRequest, res: NextApiResponse) => {
       .accounts({
         user: accountPublicKey,
         systemProgram: SystemProgram.programId,
-        // No need for tokenProgram in this context as it's not involved.
+        // No need for TOKEN_PROGRAM_ID as token handling is not involved in this context
       })
       .instruction();
 

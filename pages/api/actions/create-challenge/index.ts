@@ -137,7 +137,7 @@ const postHandler = async (req: NextApiRequest, res: NextApiResponse) => {
     const absoluteStartTime = Math.floor((Date.now() + startTimeMillis) / 1000); // In seconds
     const durationInSeconds = Math.floor(durationMillis / 1000);
 
-    const wagerAmount = new anchor.BN(Number(wager) * 10 ** 9);
+    
 
     const createChallengeJson = {
       text,
@@ -145,7 +145,7 @@ const postHandler = async (req: NextApiRequest, res: NextApiResponse) => {
       target: target as string,
       start_time: absoluteStartTime,
       duration: durationInSeconds,
-      wager: wagerAmount
+      wager: double((wager) * 10 ** 9)
     };
 
     console.log("Challenge JSON:", createChallengeJson);

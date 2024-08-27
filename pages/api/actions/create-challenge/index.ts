@@ -96,12 +96,15 @@ const postHandler = async (req: NextApiRequest, res: NextApiResponse) => {
 
     const account = new PublicKey(walletAddress as string);
 
+    const startTimeMillis = parseRelativeTime(startTime as string); 
+    const durationMillis = parseRelativeTime(duration as string);
+
     const createChallengeJson: ICreateChallenge = {
       name: name as string,
       wager: wager as string,
       target: target as string,
-      startTime: startTime as string,
-      duration: duration as string,
+      startTime: (Date.now() + startTimeMillis).toString(),
+      duration: durationMillis.toString(),
       creator: {
         id: "Agar chahiye ho to",
         walletAddress: walletAddress as string,

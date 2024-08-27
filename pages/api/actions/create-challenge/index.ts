@@ -145,7 +145,7 @@ const postHandler = async (req: NextApiRequest, res: NextApiResponse) => {
       target: target as string,
       start_time: absoluteStartTime,
       duration: durationInSeconds,
-      wager: new anchor.BN(wagerAmount)  // Sol to Lamports conversion
+      wager: wagerAmount
     };
 
     console.log("Challenge JSON:", createChallengeJson);

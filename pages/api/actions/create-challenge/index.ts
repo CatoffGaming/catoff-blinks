@@ -4,6 +4,7 @@ import {
   ActionPostRequest as SolanaActionPostRequest,
 } from "@solana/actions";
 import * as web3 from "@solana/web3.js";
+import * as anchor from "@project-serum/anchor";
 import BN from "bn.js";
 import type { NextApiRequest, NextApiResponse } from "next";
 import nextCors from "nextjs-cors";

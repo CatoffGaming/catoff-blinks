@@ -21,44 +21,22 @@ const getHandler = async (req: NextApiRequest, res: NextApiResponse) => {
       `http://${req.headers.host}`
     ).toString();
 
-    console.log(baseHref);
-
     const actions = [
       {
         "label": "Create Challenge", // button text
         "href": `${baseHref}?participationtype=${participationtype}&wager={wager}&target={target}&startTime={startTime}&duration={duration}&name={name}&walletAddress={walletAddress}`,
         "parameters": [
-          {
-            "name": "name", // field name
-            "label": "Name your dare" // text input placeholder
-          },
-          {
-            "name": "wager", // field name
-            "label": "Wager amount in SOL" // text input placeholder
-          },
-          {
-            "name": "target", // field name
-            "label": "Target" // text input placeholder
-          },
-          {
-            "name": "startTime", // field name
-            "label": "Start the challenge in? e.g. 5m, 10m, 1h, 12h, 1d..." // text input placeholder
-          },
-          {
-            "name": "duration", // field name
-            "label": "Duration of the the challenge? e.g. 5m, 10m, 1h, 12h, 1d..." // text input placeholder
-          },
-          { 
-            "name": "walletAddress", 
-            "label": "Your wallet address" }
+          { "name": "name", "label": "Name your dare" },
+          { "name": "wager", "label": "Wager amount in SOL" },
+          { "name": "target", "label": "Target" },
+          { "name": "startTime", "label": "Start the challenge in? e.g. 5m, 10m, 1h, 12h, 1d..." },
+          { "name": "duration", "label": "Duration of the challenge? e.g. 5m, 10m, 1h, 12h, 1d..." },
+          { "name": "walletAddress", "label": "Your wallet address" }
         ]
       }
     ];
 
-    const iconUrl = new URL(
-      "/logo.png",
-      `http://${req.headers.host}`
-    ).toString();
+    const iconUrl = new URL("/logo.png", `http://${req.headers.host}`).toString();
 
     const payload: ActionGetResponse = {
       title: "Dare on blinks",
@@ -71,8 +49,6 @@ const getHandler = async (req: NextApiRequest, res: NextApiResponse) => {
       },
     };
 
-    console.log("Payload constructed successfully:", payload);
-
     res.status(200).json(payload);
   } catch (err) {
     console.error("Error in getHandler:", err);
@@ -83,16 +59,21 @@ const getHandler = async (req: NextApiRequest, res: NextApiResponse) => {
 // Utility function to parse relative time to milliseconds
 const parseRelativeTime = (time: string): number => {
   const matches = time.match(/^(\d+)([smhd])$/);
-  if (!matches) throw new Error('Invalid time format');
+  if (!matches) throw new Error("Invalid time format");
   const value = parseInt(matches[1], 10);
   const unit = matches[2];
 
   switch (unit) {
-    case 's': return value * 1000; // seconds to milliseconds
-    case 'm': return value * 60 * 1000; // minutes to milliseconds
-    case 'h': return value * 60 * 60 * 1000; // hours to milliseconds
-    case 'd': return value * 24 * 60 * 60 * 1000; // days to milliseconds
-    default: throw new Error('Invalid time unit');
+    case "s":
+      return value * 1000; // seconds to milliseconds
+    case "m":
+      return value * 60 * 1000; // minutes to milliseconds
+    case "h":
+      return value * 60 * 60 * 1000; // hours to milliseconds
+    case "d":
+      return value * 24 * 60 * 60 * 1000; // days to milliseconds
+    default:
+      throw new Error("Invalid time unit");
   }
 };
 
@@ -119,8 +100,8 @@ const postHandler = async (req: NextApiRequest, res: NextApiResponse) => {
     }
 
     if (!name || !wager || !target || !startTime || !duration) {
-      console.error('Missing required parameters', { name, wager, target, startTime, duration });
-      return res.status(400).json({ error: 'Missing required parameters' });
+      console.error("Missing required parameters", { name, wager, target, startTime, duration });
+      return res.status(400).json({ error: "Missing required parameters" });
     }
 
     const accountPublicKey = new PublicKey(account);
@@ -135,15 +116,16 @@ const postHandler = async (req: NextApiRequest, res: NextApiResponse) => {
     const absoluteStartTime = Math.floor((Date.now() + startTimeMillis) / 1000); // In seconds
     const durationInSeconds = Math.floor(durationMillis / 1000);
 
-    const wagerValue = new BN(parseInt(wager as string, 10) * 10 ** 9); // Convert to Lamports and BN
+    // Ensure `wager` is converted correctly to a numeric BigNumber (`BN`)
+    const wagerValue = new BN(Number(wager) * 10 ** 9); // Convert SOL to Lamports
 
     const createChallengeJson = {
       text,
       name: name as string,
       target: target as string,
-      start_time: absoluteStartTime,
-      duration: durationInSeconds,
-      wager: wagerValue, // Ensure BN type for wager
+      start_time: new BN(absoluteStartTime),
+      duration: new BN(durationInSeconds),
+      wager: wagerValue, // Use `wagerValue` for `wager` in BN
     };
 
     console.log("Challenge JSON:", createChallengeJson);
@@ -177,9 +159,7 @@ const postHandler = async (req: NextApiRequest, res: NextApiResponse) => {
 
     transaction.add(instruction);
     const serializedTransaction = transaction.serialize();
-    const base64Transaction = Buffer.from(serializedTransaction).toString(
-      "base64"
-    );
+    const base64Transaction = Buffer.from(serializedTransaction).toString("base64");
 
     const message = `Your challenge has been created successfully!`;
     return res.status(200).send({
@@ -188,8 +168,7 @@ const postHandler = async (req: NextApiRequest, res: NextApiResponse) => {
     });
   } catch (err) {
     console.error("An error occurred:", err);
-    const message =
-      err instanceof Error ? err.message : "An unknown error occurred";
+    const message = err instanceof Error ? err.message : "An unknown error occurred";
     return res.status(400).json({ error: message });
   }
 };

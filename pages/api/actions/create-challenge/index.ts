@@ -8,18 +8,18 @@ import type { NextApiRequest, NextApiResponse } from "next";
 import * as anchor from "@project-serum/anchor";
 import nextCors from "nextjs-cors";
 import fetch from "node-fetch";
-import { ApiResponse, IChallengeById, PARTICIPATION_TYPE } from "./types";
 import axios from "axios";
-import { getAssociatedTokenAccount, web3Constants, IWeb3Participate, initWeb3 } from './helper'
+import { ApiResponse, IChallengeById, PARTICIPATION_TYPE } from "./types";
+import { getAssociatedTokenAccount, web3Constants, IWeb3Participate, initWeb3 } from './helper';
 import { PublicKey, SystemProgram } from "@solana/web3.js";
 import { ICreateChallenge } from "../join-challenge/types";
 
 const getHandler = async (req: NextApiRequest, res: NextApiResponse) => {
   try {
-    const participationtype = req.query as unknown as PARTICIPATION_TYPE;
+    const { participationtype } = req.query as unknown as PARTICIPATION_TYPE;
 
     const baseHref = new URL(
-      `/api/actions/join-challenge`,
+      `/api/actions/create-challenge`,
       `http://${req.headers.host}`
     ).toString();
 
@@ -64,7 +64,7 @@ const getHandler = async (req: NextApiRequest, res: NextApiResponse) => {
       icon: iconUrl,
       type: "action",
       description: "To settle you X beef now, dare your friends or foes!",
-      label: "Join",
+      label: "Create",
       links: {
         actions: actions,
       },
@@ -81,166 +81,74 @@ const getHandler = async (req: NextApiRequest, res: NextApiResponse) => {
 
 const postHandler = async (req: NextApiRequest, res: NextApiResponse) => {
   try {
-    // const account = new PublicKey(req.body?.account);
-    // if (!account) {
-    //   console.error("account not found in body")
-    //   res.status(400).json({ error: 'Invalid "account" provided' });
-    // }
-    // let challengeId: number = Number(req.query.challengeId);
-    // console.log("Query Challenge ID:", challengeId);
+    const { name, wager, target, startTime, duration, walletAddress } = req.query;
 
-    // if (typeof challengeId === "undefined") {
-    //   console.error("Challenge ID is undefined");
-    //   return res.status(400).json({ error: '"challengeId" is required' });
-    // }
+    if (!walletAddress) {
+      return res.status(400).json({ error: 'Invalid "walletAddress" provided' });
+    }
 
-    // const challengeResponse = await axios.get(
-    //   `https://stagingapi5.catoff.xyz/challenge/${challengeId}`,
-    //   {
-    //     headers: {
-    //       accept: "application/json",
-    //     },
-    //   }
-    // );
-    // if (!challengeResponse.data.success) {
-    //   throw new Error("Failed to fetch challenge details");
-    // }
+    if (!name || !wager || !target || !startTime || !duration) {
+      return res.status(400).json({ error: 'Missing required parameters' });
+    }
 
-    // const challenge: IChallengeById = challengeResponse.data.data;
-
-    // const { program, connection, wallet } = await initWeb3();
-
-    // let ixs: web3.TransactionInstruction[] = [];
-
-    // let web3Participate: IWeb3Participate;
-    // let userTokenAccount: PublicKey | null = web3Constants.escrowUSDCTokenAccount;
-    // let escrowTokenAccount: PublicKey | null = web3Constants.escrowUSDCTokenAccount;
-    // let TOKEN_MINT_ADDRESS: PublicKey = web3Constants.USDC_MINT_ADDRESS
-
-    // if(challenge.Currency === "SOL"){
-    //   web3Participate = {
-    //     wallet,
-    //     connection,
-    //     playerId: new BN(0),
-    //     challengeId: new BN(challenge.ChallengeID),
-    //     amount: new BN(challenge.Wager * 10**9),
-    //     currency: challenge.Currency,
-    //   }
-
-    //   userTokenAccount = await getAssociatedTokenAccount(
-    //     connection,
-    //     web3Constants.escrowAccountPublicKey,
-    //     TOKEN_MINT_ADDRESS,
-    //   )
-
-    //   escrowTokenAccount = await getAssociatedTokenAccount(
-    //     connection,
-    //     web3Constants.escrowAccountPublicKey,
-    //     TOKEN_MINT_ADDRESS,
-    //   )
-
-    // } else {
-    //   switch (challenge.Currency) {
-    //     case "USDC":
-    //       TOKEN_MINT_ADDRESS = web3Constants.USDC_MINT_ADDRESS;
-    //       break;
-    //     case "BONK":
-    //       TOKEN_MINT_ADDRESS = web3Constants.BONK_MINT_ADDRESS;
-    //       break;
-    //     case "SEND":
-    //       TOKEN_MINT_ADDRESS = web3Constants.SEND_MINT_ADDRESS;
-    //       break;
-    //     default:
-    //       break;
-    //   }
-
-    //   web3Participate = {
-    //     wallet,
-    //     connection,
-    //     playerId: new BN(0),
-    //     challengeId: new BN(challenge.ChallengeID),
-    //     amount: new BN(challenge.Wager),
-    //     currency: challenge.Currency,
-    //   }  
-
-    //   userTokenAccount = await getAssociatedTokenAccount(
-    //     connection,
-    //     account,
-    //     TOKEN_MINT_ADDRESS,
-    //   )
-
-    //   escrowTokenAccount = await getAssociatedTokenAccount(
-    //     connection,
-    //     web3Constants.escrowAccountPublicKey,
-    //     TOKEN_MINT_ADDRESS,
-    //   )
-    // }
-    // if (!userTokenAccount) {
-    //   throw new Error("user Token account not found")
-    // }
-
-
-    // if (!escrowTokenAccount) {
-    //   throw new Error("escrow Token account not found")
-    // }
-
-    // console.log("Participate Instruction Accounts:", {
-    //   user: account.toString(),
-    //   userTokenAccount: userTokenAccount.toString(),
-    //   escrowTokenAccount: escrowTokenAccount.toString(),
-    //   escrowAccount: web3Constants.escrowAccountPublicKey.toString(),
-    //   systemProgram: SystemProgram.programId.toString(),
-    //   tokenProgram: web3Constants.TOKEN_PROGRAM_ID.toString(),
-    // });    
-
-    // const instruction = await program.methods
-    //   .participate(web3Participate.currency, web3Participate.amount, web3Participate.challengeId, web3Participate.playerId, { joinChallenge: {} })
-    //   .accounts({
-    //     user: new PublicKey(account),
-    //     userTokenAccount: userTokenAccount,
-    //     escrowTokenAccount: escrowTokenAccount,
-    //     escrowAccount: web3Constants.escrowAccountPublicKey,
-    //     systemProgram: SystemProgram.programId,
-    //     tokenProgram: web3Constants.TOKEN_PROGRAM_ID,
-    //   })
-    //   .instruction();
-    // ixs.push(instruction);
-    // const { blockhash } = await connection.getLatestBlockhash();
-    // console.log("blockhash: ", blockhash);
-    // console.log("ins: ", instruction)
-    // const transaction = new web3.VersionedTransaction(
-    //   new web3.TransactionMessage({
-    //     payerKey: new PublicKey(account),
-    //     recentBlockhash: blockhash,
-    //     instructions: ixs,
-    //   }).compileToV0Message()
-    // );
-    // const serializedTransaction = transaction.serialize();
-    // const base64Transaction = Buffer.from(serializedTransaction).toString(
-    //   "base64"
-    // );
-
+    const account = new PublicKey(walletAddress as string);
 
     const createChallengeJson: ICreateChallenge = {
-      name: req.query.name as string,
-      wager: req.query.wager as string,
-      target: req.query.target as string,
-      startTime: req.query.startTime as string,
-      duration: req.query.duration as string,
+      name: name as string,
+      wager: wager as string,
+      target: target as string,
+      startTime: startTime as string,
+      duration: duration as string,
       creator: {
         id: "Agar chahiye ho to",
-        walletAddress: req.body.walletAddress as string, 
+        walletAddress: walletAddress as string,
       },
       participants: [],
       reward: {
-        type: "SOL", 
-        amount: req.query.wager as string 
-      }
+        type: "SOL",
+        amount: wager as string,
+      },
     };
 
     console.log("Challenge JSON:", createChallengeJson);
 
-    const message = `Your bet has been placed!`;
+    // Initialize Web3 and Solana program context
+    const { program, connection, wallet } = await initWeb3();
+    let ixs: web3.TransactionInstruction[] = [];
+
+    // Create instruction for creating the challenge on-chain
+    const instruction = await program.methods
+      .createChallenge(
+        new BN(Number(createChallengeJson.wager) * 10 ** 9), // Adjust this conversion based on the wager's unit
+        createChallengeJson.name,
+        createChallengeJson.target,
+        new Date(createChallengeJson.startTime).getTime() / 1000,
+        new Date(createChallengeJson.duration).getTime() / 1000
+      )
+      .accounts({
+        creator: account,
+        systemProgram: SystemProgram.programId,
+        tokenProgram: web3.Constants.TOKEN_PROGRAM_ID,
+      })
+      .instruction();
+    ixs.push(instruction);
+
+    // Fetch the latest blockhash
+    const { blockhash } = await connection.getLatestBlockhash();
+
+    // Construct and serialize the transaction
+    const transaction = new web3.Transaction({
+      recentBlockhash: blockhash,
+      feePayer: account,
+    });
+
+    transaction.add(...ixs);
+    const serializedTransaction = transaction.serialize();
+    const base64Transaction = Buffer.from(serializedTransaction).toString("base64");
+
+    // Construct the success message
+    const message = `Your challenge has been created successfully!`;
+
     return res.status(200).send({ transaction: base64Transaction, message });
   } catch (err) {
     console.error("An error occurred", err);
@@ -251,17 +159,23 @@ const postHandler = async (req: NextApiRequest, res: NextApiResponse) => {
 };
 
 export default async (req: NextApiRequest, res: NextApiResponse) => {
-  await nextCors(req, res, {
-    methods: ["GET", "POST"],
-    origin: "*", // Change this to your frontend URL in production
-    optionsSuccessStatus: 200, // Some legacy browsers (IE11, various SmartTVs) choke on 204
-  });
-  if (req.method === "GET") {
-    await getHandler(req, res);
-  } else if (req.method === "POST") {
-    await postHandler(req, res);
-  } else {
-    res.setHeader("Allow", ["GET", "POST"]);
-    res.status(405).end(`Method ${req.method} Not Allowed`);
+  try {
+    await nextCors(req, res, {
+      methods: ["GET", "POST"],
+      origin: "*", // Secure this in production
+      optionsSuccessStatus: 200,
+    });
+
+    if (req.method === "GET") {
+      await getHandler(req, res);
+    } else if (req.method === "POST") {
+      await postHandler(req, res);
+    } else {
+      res.setHeader("Allow", ["GET", "POST"]);
+      res.status(405).end(`Method ${req.method} Not Allowed`);
+    }
+  } catch (err) {
+    console.error("Error in main handler:", err);
+    res.status(500).json({ error: "Internal Server Error" });
   }
 };

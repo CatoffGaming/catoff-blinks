@@ -108,7 +108,7 @@ const postHandler = async (req: NextApiRequest, res: NextApiResponse) => {
       return res.status(400).json({ error: 'Missing required parameters' });
     }
 
-    const account = new PublicKey(walletAddress as string);
+    const userAccount = new PublicKey(walletAddress as string);
 
     const startTimeMillis = parseRelativeTime(startTime as string); 
     const durationMillis = parseRelativeTime(duration as string);

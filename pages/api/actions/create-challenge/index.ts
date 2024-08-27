@@ -59,21 +59,16 @@ const getHandler = async (req: NextApiRequest, res: NextApiResponse) => {
 // Utility function to parse relative time to milliseconds
 const parseRelativeTime = (time: string): number => {
   const matches = time.match(/^(\d+)([smhd])$/);
-  if (!matches) throw new Error("Invalid time format");
+  if (!matches) throw new Error('Invalid time format');
   const value = parseInt(matches[1], 10);
   const unit = matches[2];
 
   switch (unit) {
-    case "s":
-      return value * 1000; // seconds to milliseconds
-    case "m":
-      return value * 60 * 1000; // minutes to milliseconds
-    case "h":
-      return value * 60 * 60 * 1000; // hours to milliseconds
-    case "d":
-      return value * 24 * 60 * 60 * 1000; // days to milliseconds
-    default:
-      throw new Error("Invalid time unit");
+    case 's': return value * 1000; // seconds to milliseconds
+    case 'm': return value * 60 * 1000; // minutes to milliseconds
+    case 'h': return value * 60 * 60 * 1000; // hours to milliseconds
+    case 'd': return value * 24 * 60 * 60 * 1000; // days to milliseconds
+    default: throw new Error('Invalid time unit');
   }
 };
 
@@ -91,6 +86,7 @@ const postHandler = async (req: NextApiRequest, res: NextApiResponse) => {
       return res.status(400).json({ error: 'Missing "text" parameter' });
     }
 
+    // Extract parameters from query string
     const { name, wager, target, startTime, duration, walletAddress } = req.query;
     console.log("Received query parameters:", { name, wager, target, startTime, duration, walletAddress });
 
@@ -100,8 +96,8 @@ const postHandler = async (req: NextApiRequest, res: NextApiResponse) => {
     }
 
     if (!name || !wager || !target || !startTime || !duration) {
-      console.error("Missing required parameters", { name, wager, target, startTime, duration });
-      return res.status(400).json({ error: "Missing required parameters" });
+      console.error('Missing required parameters', { name, wager, target, startTime, duration });
+      return res.status(400).json({ error: 'Missing required parameters' });
     }
 
     const accountPublicKey = new PublicKey(account);
@@ -113,19 +109,23 @@ const postHandler = async (req: NextApiRequest, res: NextApiResponse) => {
     const startTimeMillis = parseRelativeTime(startTime as string); // e.g., 5m -> 300000 milliseconds
     const durationMillis = parseRelativeTime(duration as string); // e.g., 10m -> 600000 milliseconds
 
-    const absoluteStartTime = Math.floor((Date.now() + startTimeMillis) / 1000); // In seconds
-    const durationInSeconds = Math.floor(durationMillis / 1000);
+    const absoluteStartTime = Date.now() + startTimeMillis;
 
-    // Ensure `wager` is converted correctly to a numeric BigNumber (`BN`)
-    const wagerValue = new BN(Number(wager) * 10 ** 9); // Convert SOL to Lamports
-
-    const createChallengeJson = {
-      text,
+    const createChallengeJson: ICreateChallenge = {
       name: name as string,
+      wager: wager as string,
       target: target as string,
-      start_time: new BN(absoluteStartTime),
-      duration: new BN(durationInSeconds),
-      wager: wagerValue, // Use `wagerValue` for `wager` in BN
+      startTime: absoluteStartTime.toString(),
+      duration: durationMillis.toString(),
+      creator: {
+        id: "Agar chahiye ho to",
+        walletAddress: walletAddress as string,
+      },
+      participants: [],
+      reward: {
+        type: "SOL",
+        amount: wager as string,
+      },
     };
 
     console.log("Challenge JSON:", createChallengeJson);
@@ -134,18 +134,10 @@ const postHandler = async (req: NextApiRequest, res: NextApiResponse) => {
 
     // Create instruction for creating the challenge on-chain
     const instruction = await program.methods
-      .createChallenge(
-        createChallengeJson.text,
-        createChallengeJson.name,
-        createChallengeJson.target,
-        createChallengeJson.start_time,
-        createChallengeJson.duration,
-        createChallengeJson.wager,
-      )
+      .createChallenge(text)
       .accounts({
         user: accountPublicKey,
         systemProgram: SystemProgram.programId,
-        // No need for tokenProgram in this context as it's not involved.
       })
       .instruction();
 
@@ -162,13 +154,11 @@ const postHandler = async (req: NextApiRequest, res: NextApiResponse) => {
     const base64Transaction = Buffer.from(serializedTransaction).toString("base64");
 
     const message = `Your challenge has been created successfully!`;
-    return res.status(200).send({
-      transaction: base64Transaction,
-      message,
-    });
+    return res.status(200).send({ transaction: base64Transaction, message });
+
   } catch (err) {
     console.error("An error occurred:", err);
-    const message = err instanceof Error ? err.message : "An unknown error occurred";
+    const message = (err instanceof Error) ? err.message : "An unknown error occurred";
     return res.status(400).json({ error: message });
   }
 };
@@ -178,11 +168,11 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
     await nextCors(req, res, {
       methods: ["GET", "POST"],
       origin: "*", // Secure this in production
-      optionsSuccessStatus: 200, // Some legacy browsers (IE11, various SmartTVs) choke on 204
+      optionsSuccessStatus: 200,
     });
 
     if (req.method === "GET") {
-      await getHandler(req, res);
+      // Handle GET requests here if needed
     } else if (req.method === "POST") {
       await postHandler(req, res);
     } else {

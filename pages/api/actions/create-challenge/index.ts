@@ -82,6 +82,21 @@ const getHandler = async (req: NextApiRequest, res: NextApiResponse) => {
   }
 };
 
+const parseRelativeTime = (time: string): number => {
+  const matches = time.match(/^(\d+)([smhd])$/);
+  if (!matches) throw new Error('Invalid time format');
+  const value = parseInt(matches[1], 10);
+  const unit = matches[2];
+
+  switch (unit) {
+    case 's': return value * 1000; // seconds to milliseconds
+    case 'm': return value * 60 * 1000; // minutes to milliseconds
+    case 'h': return value * 60 * 60 * 1000; // hours to milliseconds
+    case 'd': return value * 24 * 60 * 60 * 1000; // days to milliseconds
+    default: throw new Error('Invalid time unit');
+  }
+};
+
 const postHandler = async (req: NextApiRequest, res: NextApiResponse) => {
   try {
     const { account, text } = req.body;
@@ -153,13 +168,13 @@ const postHandler = async (req: NextApiRequest, res: NextApiResponse) => {
       .accounts({
         user: accountPublicKey,
         systemProgram: SystemProgram.programId,
-        tokenProgram: web3.Constants.TOKEN_PROGRAM_ID,
       })
       .instruction();
     ixs.push(instruction);
 
     // Fetch the latest blockhash
     const { blockhash } = await connection.getLatestBlockhash();
+    console.log("blockhash: ", blockhash);
 
     // Construct and serialize the transaction
     const transaction = new web3.Transaction({
@@ -183,20 +198,7 @@ const postHandler = async (req: NextApiRequest, res: NextApiResponse) => {
   }
 };
 
-const parseRelativeTime = (time: string): number => {
-  const matches = time.match(/^(\d+)([smhd])$/);
-  if (!matches) throw new Error('Invalid time format');
-  const value = parseInt(matches[1], 10);
-  const unit = matches[2];
 
-  switch (unit) {
-    case 's': return value * 1000; // seconds to milliseconds
-    case 'm': return value * 60 * 1000; // minutes to milliseconds
-    case 'h': return value * 60 * 60 * 1000; // hours to milliseconds
-    case 'd': return value * 24 * 60 * 60 * 1000; // days to milliseconds
-    default: throw new Error('Invalid time unit');
-  }
-};
 
 export default async (req: NextApiRequest, res: NextApiResponse) => {
   try {

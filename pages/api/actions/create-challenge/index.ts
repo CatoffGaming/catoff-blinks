@@ -102,25 +102,52 @@ const postHandler = async (req: NextApiRequest, res: NextApiResponse) => {
 
     if (!account) {
       console.error("Account not found in body");
-      return res.status(400).json({ error: 'Invalid "account" provided' });
+      return res.status(400).json({
+        error: 'Invalid "account" provided',
+      });
     }
 
     if (!text) {
       console.error("Text not found in body");
-      return res.status(400).json({ error: 'Missing "text" parameter' });
+      return res.status(400).json({
+        error: 'Missing "text" parameter',
+      });
     }
 
-    const { name, wager, target, startTime, duration, walletAddress } = req.query;
+    const {
+      name,
+      wager,
+      target,
+      startTime,
+      duration,
+      walletAddress,
+    } = req.query;
     console.log("Received query parameters:", { name, wager, target, startTime, duration, walletAddress });
 
     if (!walletAddress || Array.isArray(walletAddress)) {
-      console.error('walletAddress is missing or invalid:', walletAddress);
-      return res.status(400).json({ error: 'Invalid "walletAddress" provided' });
+      console.error("walletAddress is missing or invalid:", walletAddress);
+      return res.status(400).json({
+        error: 'Invalid "walletAddress" provided',
+      });
     }
 
-    if (!name || !wager || !target || !startTime || !duration) {
-      console.error('Missing required parameters', { name, wager, target, startTime, duration });
-      return res.status(400).json({ error: 'Missing required parameters' });
+    if (
+      !name ||
+      !wager ||
+      !target ||
+      !startTime ||
+      !duration
+    ) {
+      console.error("Missing required parameters", {
+        name,
+        wager,
+        target,
+        startTime,
+        duration,
+      });
+      return res.status(400).json({
+        error: "Missing required parameters",
+      });
     }
 
     const accountPublicKey = new PublicKey(account);
@@ -135,13 +162,16 @@ const postHandler = async (req: NextApiRequest, res: NextApiResponse) => {
     const absoluteStartTime = Math.floor((Date.now() + startTimeMillis) / 1000); // In seconds
     const durationInSeconds = Math.floor(durationMillis / 1000);
 
+    // Convert wager to BN and store in variable 
+    const wagerBN = new BN(Number(wager) * 10 ** 9); // Sol to Lamports conversion
+
     const createChallengeJson = {
       text,
       name: name as string,
       target: target as string,
       start_time: absoluteStartTime,
       duration: durationInSeconds,
-      wager: new BN(Number(wager) * 10 ** 9) // Ensure BN type is used for wager with proper conversion to Lamports
+      wager: wagerBN, // Use the BN variable for wager
     };
 
     console.log("Challenge JSON:", createChallengeJson);
@@ -156,11 +186,12 @@ const postHandler = async (req: NextApiRequest, res: NextApiResponse) => {
         createChallengeJson.target,
         createChallengeJson.start_time,
         createChallengeJson.duration,
-        createChallengeJson.wager
+        createChallengeJson.wager,
       )
       .accounts({
         user: accountPublicKey,
         systemProgram: SystemProgram.programId,
+        // No need for tokenProgram in this context as it's not involved.
       })
       .instruction();
 
@@ -174,13 +205,19 @@ const postHandler = async (req: NextApiRequest, res: NextApiResponse) => {
 
     transaction.add(instruction);
     const serializedTransaction = transaction.serialize();
-    const base64Transaction = Buffer.from(serializedTransaction).toString("base64");
+    const base64Transaction = Buffer.from(serializedTransaction).toString(
+      "base64"
+    );
 
     const message = `Your challenge has been created successfully!`;
-    return res.status(200).send({ transaction: base64Transaction, message });
+    return res.status(200).send({
+      transaction: base64Transaction,
+      message,
+    });
   } catch (err) {
     console.error("An error occurred:", err);
-    const message = (err instanceof Error) ? err.message : "An unknown error occurred";
+    const message =
+      err instanceof Error ? err.message : "An unknown error occurred";
     return res.status(400).json({ error: message });
   }
 };
@@ -190,7 +227,7 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
     await nextCors(req, res, {
       methods: ["GET", "POST"],
       origin: "*", // Secure this in production
-      optionsSuccessStatus: 200,
+      optionsSuccessStatus: 200, // Some legacy browsers (IE11, various SmartTVs) choke on 204
     });
 
     if (req.method === "GET") {

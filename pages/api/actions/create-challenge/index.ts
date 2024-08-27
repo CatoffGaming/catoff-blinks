@@ -87,10 +87,12 @@ const postHandler = async (req: NextApiRequest, res: NextApiResponse) => {
     const { name, wager, target, startTime, duration, walletAddress } = req.query;
 
     if (!walletAddress) {
+      console.error('walletAddress is missing or invalid');
       return res.status(400).json({ error: 'Invalid "walletAddress" provided' });
     }
 
     if (!name || !wager || !target || !startTime || !duration) {
+      console.error('Missing required parameters', { name, wager, target, startTime, duration });
       return res.status(400).json({ error: 'Missing required parameters' });
     }
 
@@ -128,8 +130,8 @@ const postHandler = async (req: NextApiRequest, res: NextApiResponse) => {
         new BN(Number(createChallengeJson.wager) * 10 ** 9), // Adjust this conversion based on the wager's unit
         createChallengeJson.name,
         createChallengeJson.target,
-        new Date(createChallengeJson.startTime).getTime() / 1000,
-        new Date(createChallengeJson.duration).getTime() / 1000
+        Math.floor((Date.now() + startTimeMillis) / 1000), // Start time in seconds from now
+        Math.floor(durationMillis / 1000)
       )
       .accounts({
         creator: account,
@@ -161,6 +163,21 @@ const postHandler = async (req: NextApiRequest, res: NextApiResponse) => {
     let message = "An unknown error occurred";
     if (typeof err === "string") message = err;
     res.status(400).json({ error: message });
+  }
+};
+
+const parseRelativeTime = (time: string): number => {
+  const matches = time.match(/^(\d+)([smhd])$/);
+  if (!matches) throw new Error('Invalid time format');
+  const value = parseInt(matches[1], 10);
+  const unit = matches[2];
+
+  switch (unit) {
+    case 's': return value * 1000; // seconds to milliseconds
+    case 'm': return value * 60 * 1000; // minutes to milliseconds
+    case 'h': return value * 60 * 60 * 1000; // hours to milliseconds
+    case 'd': return value * 24 * 60 * 60 * 1000; // days to milliseconds
+    default: throw new Error('Invalid time unit');
   }
 };
 

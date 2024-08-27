@@ -50,6 +50,9 @@ const getHandler = async (req: NextApiRequest, res: NextApiResponse) => {
             "name": "duration", // field name
             "label": "Duration of the the challenge? e.g. 5m, 10m, 1h, 12h, 1d..." // text input placeholder
           },
+          { 
+            "name": "walletAddress", 
+            "label": "Your wallet address" }
         ]
       }
     ];

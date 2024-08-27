@@ -135,13 +135,15 @@ const postHandler = async (req: NextApiRequest, res: NextApiResponse) => {
     const absoluteStartTime = Math.floor((Date.now() + startTimeMillis) / 1000); // In seconds
     const durationInSeconds = Math.floor(durationMillis / 1000);
 
+    const wagerValue = new BN(parseInt(wager as string, 10) * 10 ** 9); // Convert to Lamports and BN
+
     const createChallengeJson = {
       text,
       name: name as string,
       target: target as string,
       start_time: absoluteStartTime,
       duration: durationInSeconds,
-      wager: parseInt(wager as string, 10) * 10 ** 9 // Convert to Lamports and keep as a normal number
+      wager: wagerValue, // Ensure BN type for wager
     };
 
     console.log("Challenge JSON:", createChallengeJson);
@@ -161,7 +163,7 @@ const postHandler = async (req: NextApiRequest, res: NextApiResponse) => {
       .accounts({
         user: accountPublicKey,
         systemProgram: SystemProgram.programId,
-        // No need for TOKEN_PROGRAM_ID as token handling is not involved in this context
+        // No need for tokenProgram in this context as it's not involved.
       })
       .instruction();
 

@@ -28,7 +28,7 @@ const getHandler = async (req: NextApiRequest, res: NextApiResponse) => {
     const actions = [
       {
         "label": "Create Challenge", // button text
-        "href": `/api/create-challenge?participationtype=${participationtype}&wager={wager}&target={target}&startTime={startTime}&duration={duration}&name={name}`,
+        "href": `${baseHref}?participationtype=${participationtype}&wager={wager}&target={target}&startTime={startTime}&duration={duration}&name={name}&walletAddress={walletAddress}`,
         "parameters": [
           {
             "name": "name", // field name

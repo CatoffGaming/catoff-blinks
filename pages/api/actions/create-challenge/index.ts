@@ -66,7 +66,7 @@ const getHandler = async (req: NextApiRequest, res: NextApiResponse) => {
       title: "Dare on blinks",
       icon: iconUrl,
       type: "action",
-      description: "To settle you X beef now, dare your friends or foes!",
+      description: "To settle your X beef now, dare your friends or foes!",
       label: "Create",
       links: {
         actions: actions,
@@ -82,6 +82,7 @@ const getHandler = async (req: NextApiRequest, res: NextApiResponse) => {
   }
 };
 
+// Utility function to parse relative time to milliseconds
 const parseRelativeTime = (time: string): number => {
   const matches = time.match(/^(\d+)([smhd])$/);
   if (!matches) throw new Error('Invalid time format');
@@ -110,7 +111,7 @@ const postHandler = async (req: NextApiRequest, res: NextApiResponse) => {
       console.error("Text not found in body");
       return res.status(400).json({ error: 'Missing "text" parameter' });
     }
-    
+
     const { name, wager, target, startTime, duration, walletAddress } = req.query;
     console.log("Received query parameters:", { name, wager, target, startTime, duration, walletAddress });
 
@@ -124,81 +125,67 @@ const postHandler = async (req: NextApiRequest, res: NextApiResponse) => {
       return res.status(400).json({ error: 'Missing required parameters' });
     }
 
-    const userAccount = new PublicKey(walletAddress as string);
+    const accountPublicKey = new PublicKey(account);
+    const walletPublicKey = new PublicKey(walletAddress as string);
 
-    const startTimeMillis = parseRelativeTime(startTime as string); 
-    const durationMillis = parseRelativeTime(duration as string);
+    console.log("Public key (account) parsed successfully:", accountPublicKey.toString());
+    console.log("Public key (walletAddress) parsed successfully:", walletPublicKey.toString());
 
-    const createChallengeJson: ICreateChallenge = {
+    const startTimeMillis = parseRelativeTime(startTime as string); // e.g., 5m -> 300000 milliseconds
+    const durationMillis = parseRelativeTime(duration as string); // e.g., 10m -> 600000 milliseconds
+
+    const absoluteStartTime = Math.floor((Date.now() + startTimeMillis) / 1000); // In seconds
+    const durationInSeconds = Math.floor(durationMillis / 1000);
+
+    const createChallengeJson = {
+      text,
       name: name as string,
-      wager: wager as string,
       target: target as string,
-      startTime: (Date.now() + startTimeMillis).toString(),
-      duration: durationMillis.toString(),
-      creator: {
-        id: "Agar chahiye ho to",
-        walletAddress: walletAddress as string,
-      },
-      participants: [],
-      reward: {
-        type: "SOL",
-        amount: wager as string,
-      },
+      start_time: absoluteStartTime,
+      duration: durationInSeconds,
+      wager: new BN(Number(wager) * 10 ** 9)  // Sol to Lamports conversion
     };
 
     console.log("Challenge JSON:", createChallengeJson);
 
-    // Initialize Web3 and Solana program context
-    
-    const accountPublicKey = new PublicKey(account);
-    console.log("Public key (account) parsed successfully:", accountPublicKey.toString());
-    
     const { program, connection, wallet } = await initWeb3();
-    let ixs: web3.TransactionInstruction[] = [];
 
     // Create instruction for creating the challenge on-chain
     const instruction = await program.methods
       .createChallenge(
-        new BN(Number(createChallengeJson.wager) * 10 ** 9), // Adjust this conversion based on the wager's unit
+        createChallengeJson.text,
         createChallengeJson.name,
         createChallengeJson.target,
-        Math.floor((Date.now() + startTimeMillis) / 1000), // Start time in seconds from now
-        Math.floor(durationMillis / 1000)
+        createChallengeJson.start_time,
+        createChallengeJson.duration,
+        createChallengeJson.wager
       )
       .accounts({
         user: accountPublicKey,
         systemProgram: SystemProgram.programId,
       })
       .instruction();
-    ixs.push(instruction);
 
-    // Fetch the latest blockhash
     const { blockhash } = await connection.getLatestBlockhash();
     console.log("blockhash: ", blockhash);
 
-    // Construct and serialize the transaction
     const transaction = new web3.Transaction({
       recentBlockhash: blockhash,
       feePayer: accountPublicKey,
     });
 
-    transaction.add(...ixs);
+    transaction.add(instruction);
     const serializedTransaction = transaction.serialize();
     const base64Transaction = Buffer.from(serializedTransaction).toString("base64");
 
-    // Construct the success message
     const message = `Your challenge has been created successfully!`;
-
     return res.status(200).send({ transaction: base64Transaction, message });
   } catch (err) {
-    console.error("An error occurred", err);
-    let message = "An unknown error occurred";
-    if (typeof err === "string") message = err;
-    res.status(400).json({ error: message });
+    console.error("An error occurred:", err);
+    const message = (err instanceof Error) ? err.message : "An unknown error occurred";
+    return res.status(400).json({ error: message });
   }
 };
-
-
 
 export default async (req: NextApiRequest, res: NextApiResponse) => {
   try {

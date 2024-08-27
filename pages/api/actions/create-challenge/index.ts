@@ -5,9 +5,7 @@ import {
 import * as web3 from "@solana/web3.js";
 import BN from "bn.js";
 import type { NextApiRequest, NextApiResponse } from "next";
-import * as anchor from "@project-serum/anchor";
 import nextCors from "nextjs-cors";
-import fetch from "node-fetch";
 import axios from "axios";
 import { ApiResponse, IChallengeById, PARTICIPATION_TYPE } from "./types";
 import { getAssociatedTokenAccount, web3Constants, IWeb3Participate, initWeb3 } from './helper';
@@ -143,7 +141,7 @@ const postHandler = async (req: NextApiRequest, res: NextApiResponse) => {
       target: target as string,
       start_time: absoluteStartTime,
       duration: durationInSeconds,
-      wager: new BN(Number(wager) * 10 ** 9)  // Sol to Lamports conversion
+      wager: new BN(Number(wager) * 10 ** 9) // Ensure BN type is used for wager with proper conversion to Lamports
     };
 
     console.log("Challenge JSON:", createChallengeJson);

@@ -5,7 +5,7 @@ import {
   Program,
   Wallet,
   web3,
-} from "@coral-xyz/anchor";
+} from "@project-serum/anchor";
 import { Connection, Keypair, PublicKey } from "@solana/web3.js";
 import { TOKEN_PROGRAM_ID } from "@solana/spl-token";
 import * as idl from "./idl.json";

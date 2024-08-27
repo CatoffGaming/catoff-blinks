@@ -20,7 +20,7 @@ export const getAssociatedTokenAccount = async (
   const tokenList = await connection.getTokenAccountsByOwner(Accountaddress, {
     mint: new PublicKey(tokenMintAddress),
   });
-  return tokenList.value[0].pubkey;
+  return tokenList.value[0]?.pubkey ?? null;
 };
 
 export const web3Constants = {
@@ -37,9 +37,7 @@ export const web3Constants = {
   escrowAccountPublicKey: new PublicKey(
     "F7S26HX7eH81RZ8uJe4gESzubcehAod6vSWs65KZ3h35"
   ),
-  TOKEN_PROGRAM_ID: new PublicKey(
-    "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
-  ),
+  TOKEN_PROGRAM_ID, // Correct import from @solana/spl-token
   READ_ONLY_PRIV_KEY: Keypair.fromSecretKey(
     base58.decode(
       "3j35gJena7bTxgsmWHUGwGd5fpdp24v8pSSGMDerXPqHQxM4Wdo5E5HcYEaGBZsP9tvXZQ3KJSSRGdLHzhMzmkyb"
@@ -51,7 +49,7 @@ export const web3Constants = {
 };
 
 export interface IWeb3Participate {
-  wallet: Wallet,
+  wallet: Wallet;
   connection: Connection;
   playerId: BN;
   challengeId: BN;

@@ -84,6 +84,18 @@ const getHandler = async (req: NextApiRequest, res: NextApiResponse) => {
 
 const postHandler = async (req: NextApiRequest, res: NextApiResponse) => {
   try {
+    const { account, text } = req.body;
+
+    if (!account) {
+      console.error("Account not found in body");
+      return res.status(400).json({ error: 'Invalid "account" provided' });
+    }
+
+    if (!text) {
+      console.error("Text not found in body");
+      return res.status(400).json({ error: 'Missing "text" parameter' });
+    }
+    
     const { name, wager, target, startTime, duration, walletAddress } = req.query;
 
     if (!walletAddress) {
@@ -121,6 +133,9 @@ const postHandler = async (req: NextApiRequest, res: NextApiResponse) => {
     console.log("Challenge JSON:", createChallengeJson);
 
     // Initialize Web3 and Solana program context
+    
+    const accountPublicKey = new PublicKey(account);
+    
     const { program, connection, wallet } = await initWeb3();
     let ixs: web3.TransactionInstruction[] = [];
 
@@ -134,7 +149,7 @@ const postHandler = async (req: NextApiRequest, res: NextApiResponse) => {
         Math.floor(durationMillis / 1000)
       )
       .accounts({
-        creator: account,
+        user: accountPublicKey,
         systemProgram: SystemProgram.programId,
         tokenProgram: web3.Constants.TOKEN_PROGRAM_ID,
       })
@@ -147,7 +162,7 @@ const postHandler = async (req: NextApiRequest, res: NextApiResponse) => {
     // Construct and serialize the transaction
     const transaction = new web3.Transaction({
       recentBlockhash: blockhash,
-      feePayer: account,
+      feePayer: accountPublicKey,
     });
 
     transaction.add(...ixs);

@@ -97,9 +97,10 @@ const postHandler = async (req: NextApiRequest, res: NextApiResponse) => {
     }
     
     const { name, wager, target, startTime, duration, walletAddress } = req.query;
+    console.log("Received query parameters:", { name, wager, target, startTime, duration, walletAddress });
 
-    if (!walletAddress) {
-      console.error('walletAddress is missing or invalid');
+    if (!walletAddress || Array.isArray(walletAddress)) {
+      console.error('walletAddress is missing or invalid:', walletAddress);
       return res.status(400).json({ error: 'Invalid "walletAddress" provided' });
     }
 
@@ -135,6 +136,7 @@ const postHandler = async (req: NextApiRequest, res: NextApiResponse) => {
     // Initialize Web3 and Solana program context
     
     const accountPublicKey = new PublicKey(account);
+    console.log("Public key (account) parsed successfully:", accountPublicKey.toString());
     
     const { program, connection, wallet } = await initWeb3();
     let ixs: web3.TransactionInstruction[] = [];

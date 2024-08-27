@@ -247,10 +247,26 @@
         }
       ],
       "args": [
-        {
-          "name": "text",
-          "type": "string"
-        }
+        {"name": "text", "type": "string"},
+        {"name": "name", "type": "string"},
+        {"name": "target", "type": "string"},
+        {"name": "start_time", "type": "i64"},
+        {"name": "duration", "type": "i64"},
+        {"name": "wager", "type": "u64"}
+      ]
+    }
+  ],
+  "events": [
+    {
+      "name": "ChallengeCreated",
+      "fields": [
+        {"name": "creator", "type": "publicKey", "index": true},
+        {"name": "text", "type": "string"},
+        {"name": "name", "type": "string"},
+        {"name": "target", "type": "string"},
+        {"name": "start_time", "type": "i64"},
+        {"name": "duration", "type": "i64"},
+        {"name": "wager", "type": "u64"}
       ]
     }
   ],

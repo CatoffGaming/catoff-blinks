@@ -145,7 +145,7 @@ const postHandler = async (req: NextApiRequest, res: NextApiResponse) => {
       target: target as string,
       start_time: absoluteStartTime,
       duration: durationInSeconds,
-      wager: double((wager) * 10 ** 9)
+      wager: ((wager) * 10 ** 9)
     };
 
     console.log("Challenge JSON:", createChallengeJson);

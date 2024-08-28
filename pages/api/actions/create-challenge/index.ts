@@ -18,8 +18,8 @@ const getHandler = async (req: NextApiRequest, res: NextApiResponse) => {
     const { participationtype } = req.query as unknown as PARTICIPATION_TYPE;
 
     const baseHref = new URL(
-      /api/actions/create-challenge,
-      http://${req.headers.host}
+      `/api/actions/create-challenge`,
+      `http://${req.headers.host}` // Fixed URL construction
     ).toString();
 
     console.log(baseHref);
@@ -27,7 +27,7 @@ const getHandler = async (req: NextApiRequest, res: NextApiResponse) => {
     const actions = [
       {
         "label": "Create Challenge", // button text
-        "href": ${baseHref}?participationtype=${participationtype}&wager={wager}&target={target}&startTime={startTime}&duration={duration}&name={name}&walletAddress={walletAddress},
+        "href": `${baseHref}?participationtype=${participationtype}&wager={wager}&target={target}&startTime={startTime}&duration={duration}&name={name}&walletAddress={walletAddress}`, // Fixed template literal
         "parameters": [
           {
             "name": "name", // field name
@@ -58,7 +58,7 @@ const getHandler = async (req: NextApiRequest, res: NextApiResponse) => {
 
     const iconUrl = new URL(
       "/logo.png",
-      http://${req.headers.host}
+      `http://${req.headers.host}` // Fixed URL construction
     ).toString();
 
     const payload: ActionGetResponse = {
@@ -136,15 +136,13 @@ const postHandler = async (req: NextApiRequest, res: NextApiResponse) => {
     const absoluteStartTime = Math.floor((Date.now() + startTimeMillis) / 1000); // In seconds
     const durationInSeconds = Math.floor(durationMillis / 1000);
 
-    
-
     const createChallengeJson = {
       text,
       name: name as string,
       target: target as string,
       start_time: new BN(absoluteStartTime),
       duration: new BN(durationInSeconds),
-      wager: new BN((Number(wager) * 10 ** 9))
+      wager: new BN(Number(wager) * 10 ** 9)
     };
 
     console.log("Challenge JSON:", createChallengeJson);
@@ -179,7 +177,7 @@ const postHandler = async (req: NextApiRequest, res: NextApiResponse) => {
     const serializedTransaction = transaction.serialize();
     const base64Transaction = Buffer.from(serializedTransaction).toString("base64");
 
-    const message = Your challenge has been created successfully!;
+    const message = "Your challenge has been created successfully!"; // Fixed string formatting
     return res.status(200).send({ transaction: base64Transaction, message });
   } catch (err) {
     console.error("An error occurred:", err);
@@ -202,7 +200,7 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
       await postHandler(req, res);
     } else {
       res.setHeader("Allow", ["GET", "POST"]);
-      res.status(405).end(Method ${req.method} Not Allowed);
+      res.status(405).end(`Method ${req.method} Not Allowed`); // Fixed string formatting
     }
   } catch (err) {
     console.error("Error in main handler:", err);

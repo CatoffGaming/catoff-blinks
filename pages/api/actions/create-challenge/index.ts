@@ -30,6 +30,10 @@ const getHandler = async (req: NextApiRequest, res: NextApiResponse) => {
         "href": `${baseHref}?participationtype=${participationtype}&wager={wager}&target={target}&startTime={startTime}&duration={duration}&name={name}&walletAddress={walletAddress}`, // Fixed template literal
         "parameters": [
           {
+            "name": "text", // field name
+            "label": "Your name" // text input placeholder
+          },
+          {
             "name": "name", // field name
             "label": "Name your dare" // text input placeholder
           },

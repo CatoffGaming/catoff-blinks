@@ -24,7 +24,7 @@ export const getAssociatedTokenAccount = async (
 };
 
 export const web3Constants = {
-  programId: new PublicKey("GndpX952DhFddW8yMtEhY4eoUCp7n277aMN77g1TXG2U"),
+  programId: new PublicKey("Bo8aBQrjNGBuUN27qL5yXiDCEd57ysUaax4HmwcknSJ3"),
   USDC_MINT_ADDRESS: new PublicKey(
     "usdcjuyqxVrSMiXtn6oDbETAwhJLs6Q5ZxZ2qLqXg9i"
   ),

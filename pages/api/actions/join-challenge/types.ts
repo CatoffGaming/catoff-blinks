@@ -434,6 +434,6 @@ export interface ICreateChallenge {
   IsPrivate: boolean; //keep it always false
   Currency: VERIFIED_CURRENCY; //keep it VERIFIED_CURRENCY.SOL
   ChallengeCategory: CHALLENGE_CATEGORIES; //keep it CHALLENGE_CATEGORIES.SOCIAL_MEDIA
-  NFTMedia: "string"; // create using ai -> ipfs
-  Media: "string"; // baad mey
+  NFTMedia: string; // create using ai -> ipfs
+  Media: string; // baad mey
 }

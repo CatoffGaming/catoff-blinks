@@ -1,4 +1,3 @@
-// Import necessary modules and types
 import {
   ActionGetResponse,
   ActionPostRequest as SolanaActionPostRequest,
@@ -19,8 +18,8 @@ const getHandler = async (req: NextApiRequest, res: NextApiResponse) => {
     const { participationtype } = req.query as unknown as PARTICIPATION_TYPE;
 
     const baseHref = new URL(
-      '/api/actions/create-challenge',
-      'http://${req.headers.host}'
+      /api/actions/create-challenge,
+      http://${req.headers.host}
     ).toString();
 
     console.log(baseHref);
@@ -137,7 +136,7 @@ const postHandler = async (req: NextApiRequest, res: NextApiResponse) => {
     const absoluteStartTime = Math.floor((Date.now() + startTimeMillis) / 1000); // In seconds
     const durationInSeconds = Math.floor(durationMillis / 1000);
 
-    const wagerValue = new BN(Number(wager) * 10 ** 9);
+    
 
     const createChallengeJson = {
       text,
@@ -145,7 +144,7 @@ const postHandler = async (req: NextApiRequest, res: NextApiResponse) => {
       target: target as string,
       start_time: new BN(absoluteStartTime),
       duration: new BN(durationInSeconds),
-      wager: wagerValue
+      wager: new BN((Number(wager) * 10 ** 9))
     };
 
     console.log("Challenge JSON:", createChallengeJson);

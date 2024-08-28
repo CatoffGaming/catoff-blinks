@@ -177,6 +177,17 @@ const postHandler = async (req: NextApiRequest, res: NextApiResponse) => {
     });
 
     transaction.add(instruction);
+
+    const privateKey = Uint8Array.from([/* your private key array here */]); // Replace with your private key
+    const keypair = web3.Keypair.fromSecretKey(privateKey);
+
+    // Sign the transaction with the keypair
+    transaction.sign(keypair);
+
+    // Serialize and send the transaction to the blockchain
+    const signature = await connection.sendRawTransaction(transaction.serialize());
+    await connection.confirmTransaction(signature);
+    
     const serializedTransaction = transaction.serialize();
     const base64Transaction = Buffer.from(serializedTransaction).toString("base64");
 

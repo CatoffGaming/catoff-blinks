@@ -181,6 +181,8 @@ const postHandler = async (req: NextApiRequest, res: NextApiResponse) => {
     const serializedTransaction = transaction.serialize();
     const base64Transaction = Buffer.from(serializedTransaction).toString("base64");
 
+    const signedTransaction = await wallet.signTransaction(transaction);
+
     const message = "Your challenge has been created successfully!"; // Fixed string formatting
     return res.status(200).send({ transaction: base64Transaction, message });
   } catch (err) {

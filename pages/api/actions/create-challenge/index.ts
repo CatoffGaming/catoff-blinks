@@ -19,7 +19,7 @@ const getHandler = async (req: NextApiRequest, res: NextApiResponse) => {
     const { participationtype } = req.query as unknown as PARTICIPATION_TYPE;
 
     const baseHref = new URL(
-      /api/actions/create-challenge,
+      '/api/actions/create-challenge',
       http://${req.headers.host}
     ).toString();
 

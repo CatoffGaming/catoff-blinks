@@ -100,17 +100,14 @@ const parseRelativeTime = (time: string): number => {
 
 const postHandler = async (req: NextApiRequest, res: NextApiResponse) => {
   try {
-    const { account, text } = req.body;
+    const { account } = req.body;
 
     if (!account) {
       console.error("Account not found in body");
       return res.status(400).json({ error: 'Invalid "account" provided' });
     }
 
-    if (!text) {
-      console.error("Text not found in body");
-      return res.status(400).json({ error: 'Missing "text" parameter' });
-    }
+    
 
     const { name, wager, target, startTime, duration, walletAddress } = req.query;
     console.log("Received query parameters:", { name, wager, target, startTime, duration, walletAddress });
@@ -140,7 +137,7 @@ const postHandler = async (req: NextApiRequest, res: NextApiResponse) => {
     const wagerValue = new BN(Number(wager) * 10 ** 9);
 
     const createChallengeJson = {
-      text,
+      
       name: name as string,
       target: target as string,
       start_time: new BN(absoluteStartTime),
@@ -155,7 +152,7 @@ const postHandler = async (req: NextApiRequest, res: NextApiResponse) => {
     // Create instruction for creating the challenge on-chain
     const instruction = await program.methods
       .createChallenge(
-        createChallengeJson.text,
+        
         createChallengeJson.name,
         createChallengeJson.target,
         createChallengeJson.start_time,

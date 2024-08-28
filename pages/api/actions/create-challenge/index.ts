@@ -20,7 +20,7 @@ const getHandler = async (req: NextApiRequest, res: NextApiResponse) => {
 
     const baseHref = new URL(
       '/api/actions/create-challenge',
-      http://${req.headers.host}
+      'http://${req.headers.host}'
     ).toString();
 
     console.log(baseHref);

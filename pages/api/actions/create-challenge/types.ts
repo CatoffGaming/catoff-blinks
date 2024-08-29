@@ -419,3 +419,25 @@ export interface IChallengeById {
   ChallengeWinner: User[];
   Players: PlayerWithDetails[];
 }
+
+export const getGameID = (participationType: PARTICIPATION_TYPE, gameType: GAME_TYPE): number | undefined => {
+  const gameMapping: Record<string, number> = {
+    [`${PARTICIPATION_TYPE.ZERO_VS_ONE}_${GAME_TYPE.STEPS}`]: 1,     // Solo Step Quest
+    [`${PARTICIPATION_TYPE.ZERO_VS_ONE}_${GAME_TYPE.CALORIES}`]: 2,  // Solo Calorie Crunch
+    [`${PARTICIPATION_TYPE.ZERO_VS_ONE}_${GAME_TYPE.VALIDATOR}`]: 10,// Single Validator Based Game (0v1)
+    
+    [`${PARTICIPATION_TYPE.ONE_VS_ONE}_${GAME_TYPE.STEPS}`]: 3,       // Step Duel
+    [`${PARTICIPATION_TYPE.ONE_VS_ONE}_${GAME_TYPE.CALORIES}`]: 4,    // Calorie Combat
+    [`${PARTICIPATION_TYPE.ONE_VS_ONE}_${GAME_TYPE.DIGITAL_PROOF}`]: 7, // Twitter Analytics Views (1v1)
+    [`${PARTICIPATION_TYPE.ONE_VS_ONE}_${GAME_TYPE.VALIDATOR}`]: 11,  // Single Validator Based Game (1v1)
+    [`${PARTICIPATION_TYPE.ONE_VS_ONE}_${GAME_TYPE.VOTING}`]: 12,     // Voting Based Dare Game
+    
+    [`${PARTICIPATION_TYPE.NVN}_${GAME_TYPE.STEPS}`]: 5,              // Pedometer Pandemonium
+    [`${PARTICIPATION_TYPE.NVN}_${GAME_TYPE.CALORIES}`]: 6,           // Calorie Conquest Community Edition
+    [`${PARTICIPATION_TYPE.NVN}_${GAME_TYPE.DIGITAL_PROOF}`]: 8,      // Twitter Analytics Views (nvn)
+    [`${PARTICIPATION_TYPE.NVN}_${GAME_TYPE.VALIDATOR}`]: 10,         // Single Validator Based Game (nvn)
+    [`${PARTICIPATION_TYPE.NVN}_${GAME_TYPE.VOTING}`]: 14,            // Voting Based multi-player Game
+  };
+
+  return gameMapping[`${participationType}_${gameType}`];
+};

@@ -7,7 +7,7 @@ import BN from "bn.js";
 import type { NextApiRequest, NextApiResponse } from "next";
 import nextCors from "nextjs-cors";
 import axios from "axios";
-import { ApiResponse, IChallengeById, PARTICIPATION_TYPE } from "./types";
+import { ApiResponse, GAME_TYPE, getGameID, IChallengeById, PARTICIPATION_TYPE } from "./types";
 import { getAssociatedTokenAccount, web3Constants, IWeb3Participate, initWeb3 } from './helper';
 import { PublicKey, SystemProgram } from "@solana/web3.js";
 import { CHALLENGE_CATEGORIES, ICreateChallenge, VERIFIED_CURRENCY } from "../join-challenge/types";
@@ -106,11 +106,11 @@ const postHandler = async (req: NextApiRequest, res: NextApiResponse) => {
       return res.status(400).json({ error: 'Invalid "account" provided' });
     }
 
-    const { name, wager, target, startTime, duration } = req.query;
-    console.log("Received query parameters:", { name, wager, target, startTime, duration });
+    const { name, wager, target, startTime, duration, participationtype } = req.query;
+    console.log("Received query parameters:", { name, wager, target, startTime, duration, participationtype });
 
-    if (!name || !wager || !target || !startTime || !duration) {
-      console.error('Missing required parameters', { name, wager, target, startTime, duration });
+    if (!name || !wager || !target || !startTime || !duration || !participationtype) {
+      console.error('Missing required parameters', { name, wager, target, startTime, duration, participationtype });
       return res.status(400).json({ error: 'Missing required parameters' });
     }
 
@@ -135,12 +135,19 @@ const postHandler = async (req: NextApiRequest, res: NextApiResponse) => {
     const aiGeneratedDescription = aiResponse.data.challenge_description;
     console.log("AI-generated description:", aiGeneratedDescription);
 
+    const gameId = getGameID(parseInt(participationtype as string), GAME_TYPE.VALIDATOR)
+
+    if (!gameId){
+      console.error(`Game is not valid, with participation type: ${participationtype}, gametype: ${GAME_TYPE.VALIDATOR}`)
+      return res.status(400).json({ error: 'Game is not valid' });
+    }
+
     const createChallengeJson: ICreateChallenge = {
       ChallengeName: name as string,
       ChallengeDescription: aiGeneratedDescription,
       StartDate: absoluteStartTime,
       EndDate: endTime,
-      GameID: 11,
+      GameID: gameId,
       Wager: parseFloat(wager as string),
       Target: parseFloat(target as string),
       IsPrivate: false,

@@ -290,8 +290,9 @@ const postHandler = async (req: NextApiRequest, res: NextApiResponse) => {
       Media: "placeholder",
     };
 
+    let externalApiResponse: any
     try {
-      const externalApiResponse = await axios.post(
+      externalApiResponse = await axios.post(
         "https://stagingapi5.catoff.xyz/challenge",
         createChallengeJson,
         {
@@ -339,7 +340,7 @@ const postHandler = async (req: NextApiRequest, res: NextApiResponse) => {
     const base64Transaction = Buffer.from(serializedTransaction).toString(
       "base64"
     );
-    const message = "Your challenge has been created successfully!"; // Fixed string formatting
+    const message = `Your challenge has been created successfully! Join with blink: https://dial.to/devnet?action=solana-action%3Ahttps://join.catoff.xyz/api/actions/join-challenge?challengeID=${externalApiResponse.data.ChallengeID}`; // Fixed string formatting
     return res.status(200).send({ transaction: base64Transaction, message });
   } catch (err) {
     console.error("An error occurred:", err);

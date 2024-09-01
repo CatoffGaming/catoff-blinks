@@ -1,26 +1,10 @@
-import {
-  ActionGetResponse,
-  LinkedAction,
-  ActionPostRequest as SolanaActionPostRequest,
-} from "@solana/actions";
+import { ActionGetResponse, LinkedAction } from "@solana/actions";
 import * as web3 from "@solana/web3.js";
-import BN from "bn.js";
 import type { NextApiRequest, NextApiResponse } from "next";
 import nextCors from "nextjs-cors";
-import axios from "axios";
-import {
-  ApiResponse,
-  GAME_TYPE,
-  getGameID,
-  IChallengeById,
-  PARTICIPATION_TYPE,
-} from "./types";
-import {
-  getAssociatedTokenAccount,
-  web3Constants,
-  IWeb3Participate,
-  initWeb3,
-} from "./helper";
+import axios, { AxiosError } from "axios";
+import { GAME_TYPE, getGameID } from "./types";
+import { initWeb3 } from "./helper";
 import { PublicKey, SystemProgram } from "@solana/web3.js";
 import {
   CHALLENGE_CATEGORIES,
@@ -28,6 +12,8 @@ import {
   VERIFIED_CURRENCY,
 } from "../join-challenge/types";
 import { refreshToken } from "./refreshTokens";
+import { refreshToken as refreshTokenProd } from "./refreshTokens_prod";
+import FormData from "form-data";
 
 const getHandler = async (req: NextApiRequest, res: NextApiResponse) => {
   try {
@@ -115,11 +101,10 @@ const getHandler = async (req: NextApiRequest, res: NextApiResponse) => {
 
     if (participationType === 0) {
       payload = {
-        title: "🚀 Create Dares on Blinks",
+        title: `🚀 Create IRL Dares:`,
         icon: dareIconUrl,
         type: "action",
-        description:
-          "🚀 Dare Accepted! Set terms, watch to see who steps up and who is a Catoff.",
+        description: `- Make daring IRL challenges for friends\n- Wager on who will step up or back down\n- Spectators can join with side bets and raise the stakes. Who will rise to the challenge? Dare, compete, win big! 💪🔥`,
         label: "Create",
         links: {
           actions: actions,
@@ -127,11 +112,10 @@ const getHandler = async (req: NextApiRequest, res: NextApiResponse) => {
       };
     } else if (participationType === 1) {
       payload = {
-        title: "Create 1v1 Challenge",
+        title: `🚀 Duel On!`,
         icon: peerIconUrl,
         type: "action",
-        description:
-          "🚀 Duel On! Ignite 1v1 showdowns on X. Fitness, sports, skills - pick your battlefield.",
+        description: `- Ignite 1v1 showdowns in fitness, sports, skills, or games\n- Wager on every clash in real-time\n- Spectators fuel the fire with side bets. Who will emerge victorious? Step up, compete, win! 🥊🔥🕹️🔥`,
         label: "Create",
         links: {
           actions: actions,
@@ -139,10 +123,10 @@ const getHandler = async (req: NextApiRequest, res: NextApiResponse) => {
       };
     } else if (participationType === 2) {
       payload = {
-        title: "Create Multiplayer Challenge",
+        title: `🚀 Battle Royale!`,
         icon: multiIconUrl,
         type: "action",
-        description: "🚀 Battle Royale! Launch multiplayer challenges on X.",
+        description: `- Launch multiplayer challenges from fitness to cooking to creativity\n- Wagers are pooled for high stakes and bigger winnings\n- Spectators sidebet on top contenders. Who will outlast and outshine? Gather your crew, compete, win big! 🏆🔥`,
         label: "Create",
         links: {
           actions: actions,
@@ -190,13 +174,22 @@ const postHandler = async (req: NextApiRequest, res: NextApiResponse) => {
     const bearerToken = await refreshToken();
     console.log(bearerToken);
 
+    // const bearerToken_prod = await refreshTokenProd();
+    // console.log(bearerToken_prod);
     if (!account) {
       console.error("Account not found in body");
       return res.status(400).json({ error: 'Invalid "account" provided' });
     }
 
-    const { name, wager, target, startTime, duration, participationtype, token } =
-      req.query;
+    const {
+      name,
+      wager,
+      target,
+      startTime,
+      duration,
+      participationtype,
+      token,
+    } = req.query;
     console.log("Received query parameters:", {
       name,
       wager,
@@ -207,14 +200,14 @@ const postHandler = async (req: NextApiRequest, res: NextApiResponse) => {
       token,
     });
 
-    const startTimeMs = new Date(startTime as string).getTime()
+    const startTimeMs = new Date(startTime as string).getTime();
     if (
       !name ||
       !wager ||
       !target ||
       !startTime ||
       !duration ||
-      !participationtype || 
+      !participationtype ||
       !token
     ) {
       console.error("Missing required parameters", {
@@ -240,18 +233,35 @@ const postHandler = async (req: NextApiRequest, res: NextApiResponse) => {
 
     const endTime = Math.floor(startTimeMs + durationMillis);
 
-    const aiResponse = await axios.post(
-      "https://ai-api.catoff.xyz/generate-description-x-api-key/",
-      {
-        prompt: `${name}`,
-        participation_type: "0v1",
-        result_type: "validator",
-        additional_info: "",
+    const participation_type = () => {
+      if (participationtype === "0") {
+        return "0v1";
+      } else if (participationtype === "1") {
+        return "1v1";
+      } else if (participationtype === "2") {
+        return "NvN";
       }
-    );
-
-    const aiGeneratedDescription = aiResponse.data.challenge_description;
-    console.log("AI-generated description:", aiGeneratedDescription);
+    };
+    // const participation_type
+    let aiGeneratedDescription: string;
+    try {
+      const aiResponse = await axios.post(
+        "https://ai-api.catoff.xyz/generate-description-x-api-key/",
+        {
+          prompt: `${name}`,
+          participation_type: participation_type(),
+          result_type: "validator",
+          additional_info: "",
+        }
+      );
+      aiGeneratedDescription = aiResponse.data.challenge_description;
+      console.log("AI-generated description:", aiGeneratedDescription);
+    } catch (error: any) {
+      console.error("Error generating AI description:", error.message || error);
+      return res
+        .status(500)
+        .json({ error: "Failed to generate AI description" });
+    }
 
     const gameId = getGameID(
       parseInt(participationtype as string),
@@ -276,23 +286,27 @@ const postHandler = async (req: NextApiRequest, res: NextApiResponse) => {
       IsPrivate: false,
       Currency: token as VERIFIED_CURRENCY,
       ChallengeCategory: CHALLENGE_CATEGORIES.SOCIAL_MEDIA,
-      NFTMedia: "placeholder",
+      NFTMedia: "ipfsLink",
       Media: "placeholder",
     };
 
-    const externalApiResponse = await axios.post(
-      "https://stagingapi5.catoff.xyz/challenge",
-      createChallengeJson,
-      {
-        headers: {
-          Authorization: `bearer ${bearerToken}`,
-          "Content-Type": "application/json",
-        },
-      }
-    );
+    try {
+      const externalApiResponse = await axios.post(
+        "https://stagingapi5.catoff.xyz/challenge",
+        createChallengeJson,
+        {
+          headers: {
+            Authorization: `bearer ${bearerToken}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
 
-    console.log("External API response:", externalApiResponse.data);
-
+      console.log("External API response:", externalApiResponse.data);
+    } catch (error: any) {
+      console.error("Error creating challenge:", error.message || error);
+      return res.status(500).json({ error: "Failed to create challenge" });
+    }
     console.log("Challenge JSON:", createChallengeJson);
 
     const textInput = JSON.stringify(createChallengeJson);

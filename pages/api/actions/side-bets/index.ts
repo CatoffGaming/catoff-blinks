@@ -28,10 +28,13 @@ import {
 } from "@solana/spl-token";
 import { publicKey } from "@project-serum/anchor/dist/cjs/utils";
 import { get } from "http";
-const secretKeyData = process.env.secretKeyData || [];
-const secretKey = new Uint8Array(secretKeyData);
+import base58 from "bs58";
+const secretKeyData = process.env.secretKeyData;
+if(!secretKeyData) {
+  throw new Error(`Secret key not set`)
+}
 // Generate the Keypair
-const adminkeypair = Keypair.fromSecretKey(secretKey);
+const adminkeypair = Keypair.fromSecretKey(base58.decode(secretKeyData));
 // import generateCollageImageUrl from "../../../components/ImageConverter";
 interface CustomActionPostRequest extends SolanaActionPostRequest {
   player_id?: string | number | string[];
@@ -88,6 +91,7 @@ const getHandler = async (req: NextApiRequest, res: NextApiResponse) => {
       title: "Bet on a player",
       icon: firstSubmissionMedia,
       description: "Side bet on a player",
+      type: "action",
       label: "Bet",
       links: {
         actions: actions,
@@ -124,7 +128,7 @@ const postHandler = async (req: NextApiRequest, res: NextApiResponse) => {
       return res.status(400).json({ error: 'Invalid "account" provided' });
     }
     let ixs: web3.TransactionInstruction[] = [];
-    const escrowAccountPublicKey = new PublicKey(process.env.ESCROW_PUBLIC_KEY);
+    const escrowAccountPublicKey = new PublicKey(process.env.ESCROW_PUBLIC_KEY!);
     const tokenMintAddress = new PublicKey(
       "9KRfR9qhnNNvmyyhCteJCmycAcUThwSfCRd65rUJcD3L"
     );

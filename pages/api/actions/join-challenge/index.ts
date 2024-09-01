@@ -57,7 +57,7 @@ const getHandler = async (req: NextApiRequest, res: NextApiResponse) => {
     ];
 
     const iconUrl = new URL(
-      "/logo.png",
+      "/join.png",
       `http://${req.headers.host}`
     ).toString();
 

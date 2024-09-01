@@ -65,7 +65,7 @@ const getHandler = async (req: NextApiRequest, res: NextApiResponse) => {
       title: "Join Challenge",
       icon: iconUrl,
       type: "action",
-      description: "Join the catoff challenge on-chain",
+      description: `${challenge.ChallengeName}\n${challenge.ChallengeDescription}`,
       label: "Join",
       links: {
         actions: actions,

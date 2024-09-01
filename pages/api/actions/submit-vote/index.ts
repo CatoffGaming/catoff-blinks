@@ -79,6 +79,7 @@ const getHandler = async (req: NextApiRequest, res: NextApiResponse) => {
       title: "Vote for Submissions",
       icon: iconUrl,
       description: "Vote for a submission on-chain",
+      type: "action",
       label: "Vote",
       links: {
         actions: actions,

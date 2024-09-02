@@ -291,7 +291,7 @@ const postHandler = async (req: NextApiRequest, res: NextApiResponse) => {
     let externalApiResponse: any
     try {
       externalApiResponse = await axios.post(
-        "https://stagingapi5.catoff.xyz/challenge",
+        "https://apiv2.catoff.xyz/challenge",
         createChallengeJson,
         {
           headers: {

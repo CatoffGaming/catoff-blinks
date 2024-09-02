@@ -2,7 +2,7 @@ import { ActionGetResponse, LinkedAction } from "@solana/actions";
 import * as web3 from "@solana/web3.js";
 import type { NextApiRequest, NextApiResponse } from "next";
 import nextCors from "nextjs-cors";
-import axios, { AxiosError } from "axios";
+import axios from "axios";
 import { GAME_TYPE, getGameID } from "./types";
 import { initWeb3 } from "./helper";
 import { PublicKey, SystemProgram } from "@solana/web3.js";
@@ -12,8 +12,6 @@ import {
   VERIFIED_CURRENCY,
 } from "../join-challenge/types";
 import { refreshToken } from "./refreshTokens";
-import { refreshToken as refreshTokenProd } from "./refreshTokens_prod";
-import FormData from "form-data";
 
 const getHandler = async (req: NextApiRequest, res: NextApiResponse) => {
   try {
@@ -22,7 +20,7 @@ const getHandler = async (req: NextApiRequest, res: NextApiResponse) => {
 
     const baseHref = new URL(
       `/api/actions/create-challenge`,
-      `http://${req.headers.host}` // Fixed URL construction
+      `https://${req.headers.host}` // Fixed URL construction
     ).toString();
 
     console.log(baseHref);
@@ -58,7 +56,7 @@ const getHandler = async (req: NextApiRequest, res: NextApiResponse) => {
           },
           {
             name: "name", // field name
-            label: "Name your dare", // text input placeholder
+            label: "Name your challenge" // text input placeholder
           },
           {
             name: "wager", // field name
@@ -86,15 +84,15 @@ const getHandler = async (req: NextApiRequest, res: NextApiResponse) => {
 
     const dareIconUrl = new URL(
       "/dare.png",
-      `http://${req.headers.host}` // Fixed URL construction
+      `https://${req.headers.host}` // Fixed URL construction
     ).toString();
     const peerIconUrl = new URL(
       "/peer.png",
-      `http://${req.headers.host}` // Fixed URL construction
+      `https://${req.headers.host}` // Fixed URL construction
     ).toString();
     const multiIconUrl = new URL(
       "/multi.png",
-      `http://${req.headers.host}` // Fixed URL construction
+      `https://${req.headers.host}` // Fixed URL construction
     ).toString();
 
     let payload: ActionGetResponse | null = null;
@@ -340,9 +338,8 @@ const postHandler = async (req: NextApiRequest, res: NextApiResponse) => {
     const base64Transaction = Buffer.from(serializedTransaction).toString(
       "base64"
     );
-    const message = `Your challenge has been created successfully! Join with blink: https://dial.to/devnet?action=solana-action%3Ahttps://join.catoff.xyz/api/actions/join-challenge?challengeID=${externalApiResponse.data.ChallengeID}.  To view the challenge in the app, click here: https://game.catoff.xyz/challenge/${externalApiResponse.data.ChallengeID}`; 
-    
-
+    console.log("Challenge: ", externalApiResponse.data.ChallengeID)
+    const message = `Your challenge has been created successfully!\nJoin with blink: https://dial.to/devnet?action=solana-action%3Ahttps://join.catoff.xyz/api/actions/join-challenge?challengeID=${externalApiResponse.data.data.ChallengeID}\nOpen Catoff App: https://game.catoff.xyz/challenge/${externalApiResponse.data.data.ChallengeID}`; // Fixed string formatting
     return res.status(200).send({ transaction: base64Transaction, message });
   } catch (err) {
     console.error("An error occurred:", err);

@@ -437,3 +437,9 @@ export interface ICreateChallenge {
   NFTMedia: string; // create using ai -> ipfs
   Media: string; // baad mey
 }
+
+export enum JOIN_CHALLENGE_METHOD {
+  LINK = "LINK",
+  SLUG = "SLUG",
+  CHALLENGE_ID = "CHALLENGE_ID"
+}

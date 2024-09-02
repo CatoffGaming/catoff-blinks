@@ -436,6 +436,7 @@ export interface ICreateChallenge {
   ChallengeCategory: CHALLENGE_CATEGORIES; //keep it CHALLENGE_CATEGORIES.SOCIAL_MEDIA
   NFTMedia: string; // create using ai -> ipfs
   Media: string; // baad mey
+  UserAddress?: string;
 }
 
 export enum JOIN_CHALLENGE_METHOD {

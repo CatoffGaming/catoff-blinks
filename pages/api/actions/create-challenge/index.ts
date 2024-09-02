@@ -11,7 +11,7 @@ import {
   ICreateChallenge,
   VERIFIED_CURRENCY,
 } from "../join-challenge/types";
-import { refreshToken } from "./refreshTokens";
+const partnerApiKey = process.env.PARTNER_API_KEY
 
 const getHandler = async (req: NextApiRequest, res: NextApiResponse) => {
   try {
@@ -169,8 +169,6 @@ const parseRelativeTime = (time: string): number => {
 const postHandler = async (req: NextApiRequest, res: NextApiResponse) => {
   try {
     const { account } = req.body;
-    const bearerToken = await refreshToken();
-    console.log(bearerToken);
 
     // const bearerToken_prod = await refreshTokenProd();
     // console.log(bearerToken_prod);
@@ -286,7 +284,10 @@ const postHandler = async (req: NextApiRequest, res: NextApiResponse) => {
       ChallengeCategory: CHALLENGE_CATEGORIES.SOCIAL_MEDIA,
       NFTMedia: "ipfsLink",
       Media: "placeholder",
+      UserAddress: account,
     };
+
+    console.log("create challenge json: ", createChallengeJson);
 
     let externalApiResponse: any
     try {
@@ -295,9 +296,10 @@ const postHandler = async (req: NextApiRequest, res: NextApiResponse) => {
         createChallengeJson,
         {
           headers: {
-            Authorization: `bearer ${bearerToken}`,
+            "x-api-key": partnerApiKey,
             "Content-Type": "application/json",
           },
+          timeout: 10000,
         }
       );
 

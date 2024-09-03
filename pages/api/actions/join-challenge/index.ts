@@ -17,6 +17,10 @@ import {
 } from "./helper";
 import { PublicKey, SystemProgram } from "@solana/web3.js";
 
+import { BlinksightsClient } from 'blinksights-sdk';
+
+const blinksightsClient = new BlinksightsClient('8c98cb26fd3e663e7dee7e48fc5ef93ec668747cac489d6999308a4c38872f7a');
+
 const getHandler = async (req: NextApiRequest, res: NextApiResponse) => {
   try {
     const { challengeID } = req.query;
@@ -60,6 +64,8 @@ const getHandler = async (req: NextApiRequest, res: NextApiResponse) => {
         `https://${req.headers.host}`
       ).toString();
 
+      const requestUrl = req.url ?? '';
+
       const payload: ActionGetResponse = {
         title: "Join Challenge",
         icon: iconUrl,
@@ -72,6 +78,8 @@ const getHandler = async (req: NextApiRequest, res: NextApiResponse) => {
       };
 
       console.log("Payload constructed successfully:", payload);
+
+      await blinksightsClient.trackRenderV1(requestUrl, payload);
 
       res.status(200).json(payload);
     } else if (!challengeID) {
@@ -120,7 +128,9 @@ const getHandler = async (req: NextApiRequest, res: NextApiResponse) => {
         `https://${req.headers.host}`
       ).toString();
 
-      const payload: ActionGetResponse = {
+      const requestUrl = req.url ?? '';
+
+      const payload: ActionGetResponse = await blinksightsClient.createActionGetResponseV1(requestUrl, {
         title: "Join Challenges",
         icon: iconUrl,
         type: "action",
@@ -129,7 +139,10 @@ const getHandler = async (req: NextApiRequest, res: NextApiResponse) => {
         links: {
           actions: actions,
         },
-      };
+      });
+
+      await blinksightsClient.trackRenderV1(requestUrl, payload);
+
       res.status(200).json(payload);
     }
   } catch (err) {
@@ -214,9 +227,17 @@ const postHandler = async (req: NextApiRequest, res: NextApiResponse) => {
 
     const challenge: IChallengeById = challengeResponse.data.data;
 
+    const requestUrl = req.url ?? '';
+    await blinksightsClient.trackActionV2(account.toString(), requestUrl);
+    const blinksightsActionIdentityInstruction = await blinksightsClient.getActionIdentityInstructionV2(account.toString(), requestUrl);
+
     const { program, connection, wallet } = await initWeb3();
 
     let ixs: web3.TransactionInstruction[] = [];
+
+    if (blinksightsActionIdentityInstruction) {
+      ixs.push(blinksightsActionIdentityInstruction);
+    }
 
     let web3Participate: IWeb3Participate;
     let userTokenAccount: PublicKey | null =

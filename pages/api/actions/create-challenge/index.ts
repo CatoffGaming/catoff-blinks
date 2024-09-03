@@ -11,6 +11,11 @@ import {
   ICreateChallenge,
   VERIFIED_CURRENCY,
 } from "../join-challenge/types";
+import { BlinksightsClient } from 'blinksights-sdk';
+
+const blinksightsClient = new BlinksightsClient('8c98cb26fd3e663e7dee7e48fc5ef93ec668747cac489d6999308a4c38872f7a');
+
+
 const partnerApiKey = process.env.PARTNER_API_KEY
 
 const getHandler = async (req: NextApiRequest, res: NextApiResponse) => {
@@ -82,61 +87,59 @@ const getHandler = async (req: NextApiRequest, res: NextApiResponse) => {
       },
     ];
 
-    const dareIconUrl = new URL(
-      "/dare.png",
-      `https://${req.headers.host}` // Fixed URL construction
-    ).toString();
-    const peerIconUrl = new URL(
-      "/peer.png",
-      `https://${req.headers.host}` // Fixed URL construction
-    ).toString();
-    const multiIconUrl = new URL(
-      "/multi.png",
-      `https://${req.headers.host}` // Fixed URL construction
-    ).toString();
+    const icons = {
+      dare: new URL("/dare.png", `https://${req.headers.host}`).toString(),
+      peer: new URL("/peer.png", `https://${req.headers.host}`).toString(),
+      multi: new URL("/multi.png", `https://${req.headers.host}`).toString(),
+  };
 
-    let payload: ActionGetResponse | null = null;
+    const requestUrl = req.url ?? '';
+    let payload = null;
 
-    if (participationType === 0) {
-      payload = {
-        title: `🚀 Create IRL Dares:`,
-        icon: dareIconUrl,
-        type: "action",
-        description: `- Make daring IRL challenges for friends\n- Wager on who will step up or back down\n- Spectators can join with side bets and raise the stakes. Who will rise to the challenge? Dare, compete, win big! 💪🔥`,
-        label: "Create",
-        links: {
-          actions: actions,
-        },
-      };
-    } else if (participationType === 1) {
-      payload = {
-        title: `🚀 Duel On!`,
-        icon: peerIconUrl,
-        type: "action",
-        description: `- Ignite 1v1 showdowns in fitness, sports, skills, or games\n- Wager on every clash in real-time\n- Spectators fuel the fire with side bets. Who will emerge victorious? Step up, compete, win! 🥊🔥🕹️🔥`,
-        label: "Create",
-        links: {
-          actions: actions,
-        },
-      };
-    } else if (participationType === 2) {
-      payload = {
-        title: `🚀 Battle Royale!`,
-        icon: multiIconUrl,
-        type: "action",
-        description: `- Launch multiplayer challenges from fitness to cooking to creativity\n- Wagers are pooled for high stakes and bigger winnings\n- Spectators sidebet on top contenders. Who will outlast and outshine? Gather your crew, compete, win big! 🏆🔥`,
-        label: "Create",
-        links: {
-          actions: actions,
-        },
-      };
-    }
+    
+
+    switch (participationType) {
+      case 0:
+          payload = await blinksightsClient.createActionGetResponseV1(requestUrl, {
+              title: `🚀 Create IRL Dares:`,
+              icon: icons.dare,
+              type: "action",
+              description: `- Make daring IRL challenges for friends\n- Wager on who will step up or back down\n- Spectators can join with side bets and raise the stakes. Who will rise to the challenge? Dare, compete, win big! 💪🔥`,
+              label: "Create",
+              links: { actions },
+          });
+          break;
+      case 1:
+          payload = await blinksightsClient.createActionGetResponseV1(requestUrl, {
+              title: `🚀 Duel On!`,
+              icon: icons.peer,
+              type: "action",
+              description: `- Ignite 1v1 showdowns in fitness, sports, skills, or games\n- Wager on every clash in real-time\n- Spectators fuel the fire with side bets. Who will emerge victorious? Step up, compete, win! 🥊🔥🕹️🔥`,
+              label: "Create",
+              links: { actions },
+          });
+          break;
+      case 2:
+          payload = await blinksightsClient.createActionGetResponseV1(requestUrl, {
+              title: `🚀 Battle Royale!`,
+              icon: icons.multi,
+              type: "action",
+              description: `- Launch multiplayer challenges from fitness to cooking to creativity\n- Wagers are pooled for high stakes and bigger winnings\n- Spectators sidebet on top contenders. Who will outlast and outshine? Gather your crew, compete, win big! 🏆🔥`,
+              label: "Create",
+              links: { actions },
+          });
+          break;
+      default:
+          return res.status(400).json({ error: "Invalid participation type" });
+  }
 
     if (!payload) {
       res.status(400).json({ error: "Payload is incorrect" });
     }
 
     console.log("Payload constructed successfully:", payload);
+
+    await blinksightsClient.trackRenderV1(requestUrl, payload); //Added blinksights tracker
 
     res.status(200).json(payload);
   } catch (err) {
@@ -312,9 +315,18 @@ const postHandler = async (req: NextApiRequest, res: NextApiResponse) => {
 
     const textInput = JSON.stringify(createChallengeJson);
 
+    const requestUrl = req.url ?? '';
+    await blinksightsClient.trackActionV2(accountPublicKey.toString(), requestUrl);
+    const blinksightsActionIdentityInstruction = await blinksightsClient.getActionIdentityInstructionV2(accountPublicKey.toString(), requestUrl);
+
     const { program, connection, wallet } = await initWeb3();
 
     let ixs: web3.TransactionInstruction[] = [];
+
+    if (blinksightsActionIdentityInstruction) {
+      ixs.push(blinksightsActionIdentityInstruction);
+    }
+
     const instruction = await program.methods
       .processStringInput("create-challenge.11", "textInput")
       .accounts({

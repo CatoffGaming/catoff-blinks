@@ -12,11 +12,9 @@ import {
   VERIFIED_CURRENCY,
 } from "../join-challenge/types";
 import { BlinksightsClient } from 'blinksights-sdk';
-
-const blinksightsClient = new BlinksightsClient('8c98cb26fd3e663e7dee7e48fc5ef93ec668747cac489d6999308a4c38872f7a');
-
-
+const BLINKS_INSIGHT_API_KEY = process.env.BLINKS_INSIGHT_API_KEY
 const partnerApiKey = process.env.PARTNER_API_KEY
+const blinksightsClient = new BlinksightsClient(BLINKS_INSIGHT_API_KEY!);
 
 const getHandler = async (req: NextApiRequest, res: NextApiResponse) => {
   try {

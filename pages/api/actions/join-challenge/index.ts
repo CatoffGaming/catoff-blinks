@@ -355,7 +355,7 @@ const postHandler = async (req: NextApiRequest, res: NextApiResponse) => {
         connection,
         playerId: new BN(0),
         challengeId: new BN(challenge.ChallengeID),
-        amount: challenge.Wager.toString(),
+        amount: new BN (challenge.Wager),
         currency: challenge.Currency,
       };
 

@@ -54,7 +54,7 @@ export interface IWeb3Participate {
   connection: Connection;
   playerId: BN;
   challengeId: BN;
-  amount: BN;
+  amount: BN | number | string;
   currency?: string;
 }
 

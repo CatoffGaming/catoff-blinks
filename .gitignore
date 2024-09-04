@@ -41,3 +41,4 @@ yarn.lock
 
 tokens.json
 .env
+*.log

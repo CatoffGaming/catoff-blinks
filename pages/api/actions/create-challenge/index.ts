@@ -11,9 +11,11 @@ import {
   ICreateChallenge,
   VERIFIED_CURRENCY,
 } from "../join-challenge/types";
-import { BlinksightsClient } from 'blinksights-sdk';
-const BLINKS_INSIGHT_API_KEY = process.env.BLINKS_INSIGHT_API_KEY
-const partnerApiKey = process.env.PARTNER_API_KEY
+import { BlinksightsClient } from "blinksights-sdk";
+import logger from "../../common/logger"; // Ensure logger is imported
+
+const BLINKS_INSIGHT_API_KEY = process.env.BLINKS_INSIGHT_API_KEY;
+const partnerApiKey = process.env.PARTNER_API_KEY;
 const blinksightsClient = new BlinksightsClient(BLINKS_INSIGHT_API_KEY!);
 
 const getHandler = async (req: NextApiRequest, res: NextApiResponse) => {
@@ -21,12 +23,17 @@ const getHandler = async (req: NextApiRequest, res: NextApiResponse) => {
     const { participationtype } = req.query;
     const participationType = Number(participationtype);
 
+    logger.info(
+      "GET request received with participation type: %s",
+      participationType
+    );
+
     const baseHref = new URL(
       `/api/actions/create-challenge`,
-      `https://${req.headers.host}` // Fixed URL construction
+      `http://${req.headers.host}` // Fixed URL construction
     ).toString();
 
-    console.log(baseHref);
+    logger.info("Base URL constructed: %s", baseHref);
 
     const actions: LinkedAction[] = [
       {
@@ -59,7 +66,7 @@ const getHandler = async (req: NextApiRequest, res: NextApiResponse) => {
           },
           {
             name: "name", // field name
-            label: "Name your challenge" // text input placeholder
+            label: "Name your challenge", // text input placeholder
           },
           {
             name: "wager", // field name
@@ -73,8 +80,7 @@ const getHandler = async (req: NextApiRequest, res: NextApiResponse) => {
           },
           {
             name: "startTime", // field name
-            label: "Start the challenge in?", // text input placeholder
-            type: "datetime-local",
+            label: "Start the challenge in? e.g. 5m, 10m, 1h, 12h, 1d...", // text input placeholder
           },
           {
             name: "duration", // field name
@@ -86,62 +92,74 @@ const getHandler = async (req: NextApiRequest, res: NextApiResponse) => {
     ];
 
     const icons = {
-      dare: new URL("/dare.png", `https://${req.headers.host}`).toString(),
-      peer: new URL("/peer.png", `https://${req.headers.host}`).toString(),
-      multi: new URL("/multi.png", `https://${req.headers.host}`).toString(),
-  };
+      dare: new URL("/dare.png", `http://${req.headers.host}`).toString(),
+      peer: new URL("/peer.png", `http://${req.headers.host}`).toString(),
+      multi: new URL("/multi.png", `http://${req.headers.host}`).toString(),
+    };
 
-    const requestUrl = req.url ?? '';
+    const requestUrl = req.url ?? "";
     let payload = null;
-
-    
 
     switch (participationType) {
       case 0:
-          payload = await blinksightsClient.createActionGetResponseV1(requestUrl, {
-              title: `🚀 Create IRL Dares:`,
-              icon: icons.dare,
-              type: "action",
-              description: `- Make daring IRL challenges for friends\n- Wager on who will step up or back down\n- Spectators can join with side bets and raise the stakes. Who will rise to the challenge? Dare, compete, win big! 💪🔥`,
-              label: "Create",
-              links: { actions },
-          });
-          break;
+        logger.info("Creating payload for IRL Dares");
+        payload = await blinksightsClient.createActionGetResponseV1(
+          requestUrl,
+          {
+            title: `🚀 Create IRL Dares:`,
+            icon: icons.dare,
+            type: "action",
+            description: `- Make daring IRL challenges for friends\n- Wager on who will step up or back down\n- Spectators can join with side bets and raise the stakes. Who will rise to the challenge? Dare, compete, win big! 💪🔥`,
+            label: "Create",
+            links: { actions },
+          }
+        );
+        break;
       case 1:
-          payload = await blinksightsClient.createActionGetResponseV1(requestUrl, {
-              title: `🚀 Duel On!`,
-              icon: icons.peer,
-              type: "action",
-              description: `- Ignite 1v1 showdowns in fitness, sports, skills, or games\n- Wager on every clash in real-time\n- Spectators fuel the fire with side bets. Who will emerge victorious? Step up, compete, win! 🥊🔥🕹️🔥`,
-              label: "Create",
-              links: { actions },
-          });
-          break;
+        logger.info("Creating payload for 1v1 Duel challenges");
+        payload = await blinksightsClient.createActionGetResponseV1(
+          requestUrl,
+          {
+            title: `🚀 Duel On!`,
+            icon: icons.peer,
+            type: "action",
+            description: `- Ignite 1v1 showdowns in fitness, sports, skills, or games\n- Wager on every clash in real-time\n- Spectators fuel the fire with side bets. Who will emerge victorious? Step up, compete, win! 🥊🔥🕹️🔥`,
+            label: "Create",
+            links: { actions },
+          }
+        );
+        break;
       case 2:
-          payload = await blinksightsClient.createActionGetResponseV1(requestUrl, {
-              title: `🚀 Battle Royale!`,
-              icon: icons.multi,
-              type: "action",
-              description: `- Launch multiplayer challenges from fitness to cooking to creativity\n- Wagers are pooled for high stakes and bigger winnings\n- Spectators sidebet on top contenders. Who will outlast and outshine? Gather your crew, compete, win big! 🏆🔥`,
-              label: "Create",
-              links: { actions },
-          });
-          break;
+        logger.info("Creating payload for multiplayer challenges");
+        payload = await blinksightsClient.createActionGetResponseV1(
+          requestUrl,
+          {
+            title: `🚀 Battle Royale!`,
+            icon: icons.multi,
+            type: "action",
+            description: `- Launch multiplayer challenges from fitness to cooking to creativity\n- Wagers are pooled for high stakes and bigger winnings\n- Spectators sidebet on top contenders. Who will outlast and outshine? Gather your crew, compete, win big! 🏆🔥`,
+            label: "Create",
+            links: { actions },
+          }
+        );
+        break;
       default:
-          return res.status(400).json({ error: "Invalid participation type" });
-  }
-
-    if (!payload) {
-      res.status(400).json({ error: "Payload is incorrect" });
+        logger.error("Invalid participation type: %s", participationType);
+        return res.status(400).json({ error: "Invalid participation type" });
     }
 
-    console.log("Payload constructed successfully:", payload);
+    if (!payload) {
+      logger.error("Payload construction failed");
+      return res.status(400).json({ error: "Payload is incorrect" });
+    }
+
+    logger.info("Payload constructed successfully: %o", payload);
 
     await blinksightsClient.trackRenderV1(requestUrl, payload); //Added blinksights tracker
 
     res.status(200).json(payload);
   } catch (err) {
-    console.error("Error in getHandler:", err);
+    logger.error("Error in getHandler: %s", err);
     res.status(400).json({ error: "An unknown error occurred" });
   }
 };
@@ -171,10 +189,10 @@ const postHandler = async (req: NextApiRequest, res: NextApiResponse) => {
   try {
     const { account } = req.body;
 
-    // const bearerToken_prod = await refreshTokenProd();
-    // console.log(bearerToken_prod);
+    logger.info("POST request received with account: %s", account);
+
     if (!account) {
-      console.error("Account not found in body");
+      logger.error("Account not found in body");
       return res.status(400).json({ error: 'Invalid "account" provided' });
     }
 
@@ -187,7 +205,8 @@ const postHandler = async (req: NextApiRequest, res: NextApiResponse) => {
       participationtype,
       token,
     } = req.query;
-    console.log("Received query parameters:", {
+
+    logger.info("Received query parameters: %o", {
       name,
       wager,
       target,
@@ -207,7 +226,7 @@ const postHandler = async (req: NextApiRequest, res: NextApiResponse) => {
       !participationtype ||
       !token
     ) {
-      console.error("Missing required parameters", {
+      logger.error("Missing required parameters: %o", {
         name,
         wager,
         target,
@@ -220,15 +239,17 @@ const postHandler = async (req: NextApiRequest, res: NextApiResponse) => {
     }
 
     const accountPublicKey = new PublicKey(account);
-
-    console.log(
-      "Public key (account) parsed successfully:",
+    logger.info(
+      "Public key (account) parsed successfully: %s",
       accountPublicKey.toString()
     );
 
+    const startTimeMillis = parseRelativeTime(startTime as string); // e.g., 5m -> 300000 milliseconds
     const durationMillis = parseRelativeTime(duration as string); // e.g., 10m -> 600000 milliseconds
 
-    const endTime = Math.floor(startTimeMs + durationMillis);
+    const absoluteStartTime = Math.floor(Date.now() + startTimeMillis);
+    const durationInSeconds = Math.floor(durationMillis);
+    const endTime = Math.floor(absoluteStartTime + durationMillis);
 
     const participation_type = () => {
       if (participationtype === "0") {
@@ -239,9 +260,10 @@ const postHandler = async (req: NextApiRequest, res: NextApiResponse) => {
         return "NvN";
       }
     };
-    // const participation_type
+
     let aiGeneratedDescription: string;
     try {
+      logger.info("Generating AI description for challenge: %s", name);
       const aiResponse = await axios.post(
         "https://ai-api.catoff.xyz/generate-description-x-api-key/",
         {
@@ -249,12 +271,16 @@ const postHandler = async (req: NextApiRequest, res: NextApiResponse) => {
           participation_type: participation_type(),
           result_type: "validator",
           additional_info: "",
-        }
+        },
+        { timeout: 100000 }
       );
       aiGeneratedDescription = aiResponse.data.challenge_description;
-      console.log("AI-generated description:", aiGeneratedDescription);
+      logger.info("AI-generated description: %s", aiGeneratedDescription);
     } catch (error: any) {
-      console.error("Error generating AI description:", error.message || error);
+      logger.error(
+        "Error generating AI description: %s",
+        error.message || error
+      );
       return res
         .status(500)
         .json({ error: "Failed to generate AI description" });
@@ -266,8 +292,10 @@ const postHandler = async (req: NextApiRequest, res: NextApiResponse) => {
     );
 
     if (!gameId) {
-      console.error(
-        `Game is not valid, with participation type: ${participationtype}, gametype: ${GAME_TYPE.VALIDATOR}`
+      logger.error(
+        `Game is not valid, with participation type: %s, gametype: %s`,
+        participationtype,
+        GAME_TYPE.VALIDATOR
       );
       return res.status(400).json({ error: "Game is not valid" });
     }
@@ -275,7 +303,7 @@ const postHandler = async (req: NextApiRequest, res: NextApiResponse) => {
     const createChallengeJson: ICreateChallenge = {
       ChallengeName: name as string,
       ChallengeDescription: aiGeneratedDescription,
-      StartDate: startTimeMs,
+      StartDate: absoluteStartTime,
       EndDate: endTime,
       GameID: gameId,
       Wager: parseFloat(wager as string),
@@ -288,10 +316,11 @@ const postHandler = async (req: NextApiRequest, res: NextApiResponse) => {
       UserAddress: account,
     };
 
-    console.log("create challenge json: ", createChallengeJson);
+    logger.info("Create challenge JSON: %o", createChallengeJson);
 
-    let externalApiResponse: any
+    let externalApiResponse: any;
     try {
+      logger.info("Sending request to external API");
       externalApiResponse = await axios.post(
         "https://apiv2.catoff.xyz/challenge",
         createChallengeJson,
@@ -300,22 +329,28 @@ const postHandler = async (req: NextApiRequest, res: NextApiResponse) => {
             "x-api-key": partnerApiKey,
             "Content-Type": "application/json",
           },
-          timeout: 10000,
+          timeout: 100000,
         }
       );
 
-      console.log("External API response:", externalApiResponse.data);
+      logger.info("External API response: %o", externalApiResponse.data);
     } catch (error: any) {
-      console.error("Error creating challenge:", error.message || error);
+      logger.error("Error creating challenge: %s", error.message || error);
       return res.status(500).json({ error: "Failed to create challenge" });
     }
-    console.log("Challenge JSON:", createChallengeJson);
 
     const textInput = JSON.stringify(createChallengeJson);
 
-    const requestUrl = req.url ?? '';
-    await blinksightsClient.trackActionV2(accountPublicKey.toString(), requestUrl);
-    const blinksightsActionIdentityInstruction = await blinksightsClient.getActionIdentityInstructionV2(accountPublicKey.toString(), requestUrl);
+    const requestUrl = req.url ?? "";
+    await blinksightsClient.trackActionV2(
+      accountPublicKey.toString(),
+      requestUrl
+    );
+    const blinksightsActionIdentityInstruction =
+      await blinksightsClient.getActionIdentityInstructionV2(
+        accountPublicKey.toString(),
+        requestUrl
+      );
 
     const { program, connection, wallet } = await initWeb3();
 
@@ -335,8 +370,7 @@ const postHandler = async (req: NextApiRequest, res: NextApiResponse) => {
     ixs.push(instruction);
 
     const { blockhash } = await connection.getLatestBlockhash();
-    console.log("blockhash: ", blockhash);
-    console.log("ins: ", instruction);
+    logger.info("Blockhash: %s", blockhash);
 
     const transaction = new web3.VersionedTransaction(
       new web3.TransactionMessage({
@@ -350,14 +384,17 @@ const postHandler = async (req: NextApiRequest, res: NextApiResponse) => {
     const base64Transaction = Buffer.from(serializedTransaction).toString(
       "base64"
     );
-    console.log("Challenge: ", externalApiResponse.data.ChallengeID)
-    const message = `Your challenge has been created successfully!\nJoin with blink: https://dial.to/devnet?action=solana-action%3Ahttps://join.catoff.xyz/api/actions/join-challenge?challengeID=${externalApiResponse.data.data.ChallengeID}\nOpen Catoff App: https://game.catoff.xyz/challenge/${externalApiResponse.data.data.ChallengeID}`; // Fixed string formatting
+
+    logger.info(
+      "Challenge created successfully with ID: %s",
+      externalApiResponse.data.ChallengeID
+    );
+
+    const message = `Your challenge has been created successfully!\nJoin with blink: https://dial.to/devnet?action=solana-action%3Ahttps://join.catoff.xyz/api/actions/join-challenge?challengeID=${externalApiResponse.data.data.ChallengeID}\nOpen Catoff App: https://game.catoff.xyz/challenge/${externalApiResponse.data.data.ChallengeID}`;
     return res.status(200).send({ transaction: base64Transaction, message });
   } catch (err) {
-    console.error("An error occurred:", err);
-    const message =
-      err instanceof Error ? err.message : "An unknown error occurred";
-    return res.status(400).json({ error: message });
+    logger.error("An error occurred in postHandler: %s", err);
+    return res.status(400).json({ error: err || "An unknown error occurred" });
   }
 };
 
@@ -375,10 +412,10 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
       await postHandler(req, res);
     } else {
       res.setHeader("Allow", ["GET", "POST"]);
-      res.status(405).end(`Method ${req.method} Not Allowed`); // Fixed string formatting
+      res.status(405).end(`Method ${req.method} Not Allowed`);
     }
   } catch (err) {
-    console.error("Error in main handler:", err);
+    logger.error("Error in main handler: %s", err);
     res.status(500).json({ error: "Internal Server Error" });
   }
 };

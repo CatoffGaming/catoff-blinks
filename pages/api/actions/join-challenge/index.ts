@@ -16,15 +16,15 @@ import {
   initWeb3,
 } from "./helper";
 import { PublicKey, SystemProgram } from "@solana/web3.js";
+import logger from "../../common/logger";
 
 const getHandler = async (req: NextApiRequest, res: NextApiResponse) => {
   try {
     const { challengeID } = req.query;
 
-    console.log("Extracted challengeID:", challengeID);
+    logger.info("GET Request received with challengeID: %s", challengeID);
 
     if (challengeID) {
-      // Ensure absolute URL for fetching challenge details
       const challengeResponse = await axios.get(
         `https://apiv2.catoff.xyz/challenge/${challengeID}`,
         {
@@ -33,20 +33,23 @@ const getHandler = async (req: NextApiRequest, res: NextApiResponse) => {
           },
         }
       );
+
       if (!challengeResponse.data.success) {
+        logger.error(
+          "Failed to fetch challenge details for challengeID: %s",
+          challengeID
+        );
         throw new Error("Failed to fetch challenge details");
       }
 
       const challenge: IChallengeById = challengeResponse.data.data;
 
-      console.log("here");
+      logger.info("Fetched challenge details for challengeID: %s", challengeID);
 
       const baseHref = new URL(
         `/api/actions/join-challenge`,
-        `https://${req.headers.host}`
+        `http://${req.headers.host}`
       ).toString();
-
-      console.log(baseHref);
 
       const actions = [
         {
@@ -57,7 +60,7 @@ const getHandler = async (req: NextApiRequest, res: NextApiResponse) => {
 
       const iconUrl = new URL(
         "/logo.png",
-        `https://${req.headers.host}`
+        `http://${req.headers.host}`
       ).toString();
 
       const payload: ActionGetResponse = {
@@ -71,21 +74,22 @@ const getHandler = async (req: NextApiRequest, res: NextApiResponse) => {
         },
       };
 
-      console.log("Payload constructed successfully:", payload);
+      logger.info(
+        "Payload constructed successfully for challengeID: %s",
+        challengeID
+      );
 
       res.status(200).json(payload);
-    } else if (!challengeID) {
+    } else {
       const baseHref = new URL(
         `/api/actions/join-challenge`,
-        `https://${req.headers.host}`
+        `http://${req.headers.host}`
       ).toString();
-
-      console.log(baseHref);
 
       const actions: LinkedAction[] = [
         {
-          label: "Join Catoff Challenge", // button text
-          href: `${baseHref}?method={method}&value={value}`, // Fixed template literal
+          label: "Join Catoff Challenge",
+          href: `${baseHref}?method={method}&value={value}`,
           parameters: [
             {
               name: "method",
@@ -108,8 +112,8 @@ const getHandler = async (req: NextApiRequest, res: NextApiResponse) => {
               ],
             },
             {
-              name: "value", // field name
-              label: "Paste the link/SLUG/Challenge ID", // text input placeholder
+              name: "value",
+              label: "Paste the link/SLUG/Challenge ID",
             },
           ],
         },
@@ -117,7 +121,7 @@ const getHandler = async (req: NextApiRequest, res: NextApiResponse) => {
 
       const iconUrl = new URL(
         "/logo.png",
-        `https://${req.headers.host}`
+        `http://${req.headers.host}`
       ).toString();
 
       const payload: ActionGetResponse = {
@@ -130,49 +134,84 @@ const getHandler = async (req: NextApiRequest, res: NextApiResponse) => {
           actions: actions,
         },
       };
+
+      logger.info("Payload for joining challenges constructed successfully");
+
       res.status(200).json(payload);
     }
   } catch (err) {
-    console.error("Error in getHandler:", err);
+    logger.error("Error in getHandler: %s", err);
     res.status(400).json({ error: "An unknown error occurred" });
   }
 };
 
 const postHandler = async (req: NextApiRequest, res: NextApiResponse) => {
   try {
+    logger.info("POST Request received with body: %o", req.body);
+
     const account = new PublicKey(req.body?.account);
     if (!account) {
-      console.error("account not found in body");
-      res.status(400).json({ error: 'Invalid "account" provided' });
+      logger.error("Invalid 'account' provided in body");
+      return res.status(400).json({ error: 'Invalid "account" provided' });
     }
+    const accountStr = account.toString();
+
+    logger.info("Parsed account: %s", accountStr);
+
     let challengeId: number | null = req.query.challengeId
       ? Number(req.query.challengeId)
       : null;
-    console.log("here2");
 
-    if (challengeId) {
-      console.log("Query Challenge ID:", challengeId);
-    } else {
+    logger.info(
+      "Extracted Challenge ID: %s for account: %s",
+      challengeId,
+      accountStr
+    );
+
+    if (!challengeId) {
       const method: JOIN_CHALLENGE_METHOD = req.query
         .method as JOIN_CHALLENGE_METHOD;
       const value: string = req.query.value as string;
+
+      logger.info(
+        "Method: %s, Value: %s, for account: %s",
+        method,
+        value,
+        accountStr
+      );
+
       switch (method) {
-        case JOIN_CHALLENGE_METHOD.CHALLENGE_ID: {
-          console.log("here1");
+        case JOIN_CHALLENGE_METHOD.CHALLENGE_ID:
           challengeId = parseInt(value);
+          logger.info(
+            "Parsed challenge ID from value: %s, for account: %s",
+            challengeId,
+            accountStr
+          );
           break;
-        }
-        case JOIN_CHALLENGE_METHOD.LINK: {
-          // Extract the challenge ID from the link.
+        case JOIN_CHALLENGE_METHOD.LINK:
           const linkParts = value.split("/");
           const idFromLink = linkParts[linkParts.length - 1];
           challengeId = parseInt(idFromLink);
           if (isNaN(challengeId)) {
+            logger.error(
+              "Invalid challenge ID in link for account: %s",
+              accountStr
+            );
             throw new Error("Invalid challenge ID in link");
           }
+          logger.info(
+            "Extracted challenge ID from link: %s for account: %s",
+            challengeId,
+            accountStr
+          );
           break;
-        }
-        case JOIN_CHALLENGE_METHOD.SLUG: {
+        case JOIN_CHALLENGE_METHOD.SLUG:
+          logger.info(
+            "Fetching challenge by slug: %s for account: %s",
+            value,
+            accountStr
+          );
           const challengeResponse = await axios.get(
             `https://apiV2.catoff.xyz/challenge/share/${value}`,
             {
@@ -182,23 +221,44 @@ const postHandler = async (req: NextApiRequest, res: NextApiResponse) => {
             }
           );
           if (!challengeResponse.data.success) {
+            logger.error(
+              "Failed to fetch challenge details for slug: %s, account: %s",
+              value,
+              accountStr
+            );
             throw new Error("Failed to fetch challenge details");
           }
 
-          // Extract the challenge ID from the returned link.
           const link = challengeResponse.data.data.Link;
-          const linkParts = link.split("/");
-          challengeId = parseInt(linkParts[linkParts.length - 1]);
+          const linkPartsSlug = link.split("/");
+          challengeId = parseInt(linkPartsSlug[linkPartsSlug.length - 1]);
           if (isNaN(challengeId)) {
+            logger.error(
+              "Invalid challenge ID in link from slug for account: %s",
+              accountStr
+            );
             throw new Error("Invalid challenge ID in link from slug");
           }
-
+          logger.info(
+            "Extracted challenge ID from slug: %s for account: %s",
+            challengeId,
+            accountStr
+          );
           break;
-        }
         default:
+          logger.error(
+            "Invalid method provided for joining challenge for account: %s",
+            accountStr
+          );
           throw new Error("Invalid method provided for joining challenge");
       }
     }
+
+    logger.info(
+      "Fetching challenge details for challengeId: %s, account: %s",
+      challengeId,
+      accountStr
+    );
 
     const challengeResponse = await axios.get(
       `https://apiv2.catoff.xyz/challenge/${challengeId}`,
@@ -209,12 +269,24 @@ const postHandler = async (req: NextApiRequest, res: NextApiResponse) => {
       }
     );
     if (!challengeResponse.data.success) {
+      logger.error(
+        "Failed to fetch challenge details for challengeId: %s, account: %s",
+        challengeId,
+        accountStr
+      );
       throw new Error("Failed to fetch challenge details");
     }
 
     const challenge: IChallengeById = challengeResponse.data.data;
 
+    logger.info(
+      `Fetched challenge details for challenge: ${JSON.stringify(
+        challenge
+      )}, account: ${accountStr}`
+    );
+
     const { program, connection, wallet } = await initWeb3();
+    logger.info("Initialized Web3 for account: %s", accountStr);
 
     let ixs: web3.TransactionInstruction[] = [];
 
@@ -225,6 +297,12 @@ const postHandler = async (req: NextApiRequest, res: NextApiResponse) => {
       web3Constants.escrowUSDCTokenAccount;
     let TOKEN_MINT_ADDRESS: PublicKey = web3Constants.USDC_MINT_ADDRESS;
 
+    logger.info(
+      "Challenge currency: %s, account: %s",
+      challenge.Currency,
+      accountStr
+    );
+
     if (challenge.Currency === "SOL") {
       web3Participate = {
         wallet,
@@ -234,6 +312,11 @@ const postHandler = async (req: NextApiRequest, res: NextApiResponse) => {
         amount: new BN(challenge.Wager * 10 ** 9),
         currency: challenge.Currency,
       };
+
+      logger.info(
+        "Preparing transaction for SOL currency, account: %s",
+        accountStr
+      );
 
       userTokenAccount = await getAssociatedTokenAccount(
         connection,
@@ -261,14 +344,22 @@ const postHandler = async (req: NextApiRequest, res: NextApiResponse) => {
           break;
       }
 
+      logger.info(
+        "Setting up token for currency: %s, account: %s",
+        challenge.Currency,
+        accountStr
+      );
+
       web3Participate = {
         wallet,
         connection,
         playerId: new BN(0),
         challengeId: new BN(challenge.ChallengeID),
-        amount: new BN(challenge.Wager),
+        amount: challenge.Wager.toString(),
         currency: challenge.Currency,
       };
+
+      logger.info(`Web3 participate: ${web3Participate.playerId}, ${web3Participate.challengeId}, ${challenge.Wager} ${web3Participate.amount}, ${web3Participate.currency}`);
 
       userTokenAccount = await getAssociatedTokenAccount(
         connection,
@@ -282,22 +373,31 @@ const postHandler = async (req: NextApiRequest, res: NextApiResponse) => {
         TOKEN_MINT_ADDRESS
       );
     }
+
     if (!userTokenAccount) {
-      throw new Error("user Token account not found");
+      logger.error("User Token account not found for account: %s", accountStr);
+      throw new Error("User Token account not found");
     }
 
     if (!escrowTokenAccount) {
-      throw new Error("escrow Token account not found");
+      logger.error(
+        "Escrow Token account not found for account: %s",
+        accountStr
+      );
+      throw new Error("Escrow Token account not found");
     }
 
-    console.log("Participate Instruction Accounts:", {
-      user: account.toString(),
-      userTokenAccount: userTokenAccount.toString(),
-      escrowTokenAccount: escrowTokenAccount.toString(),
-      escrowAccount: web3Constants.escrowAccountPublicKey.toString(),
-      systemProgram: SystemProgram.programId.toString(),
-      tokenProgram: web3Constants.TOKEN_PROGRAM_ID.toString(),
-    });
+    logger.info(
+      "User token and escrow token accounts set up for account: %s",
+      accountStr
+    );
+
+    logger.info(
+      `Creating tx with data: [${web3Participate.currency},${web3Participate.amount},${web3Participate.challengeId},${web3Participate.playerId}], for account: ${accountStr}`
+    );
+    logger.info(
+      `Creating tx with accounts: [${userTokenAccount},${escrowTokenAccount},${web3Constants.escrowAccountPublicKey}], for account: ${accountStr}`
+    );
 
     const instruction = await program.methods
       .participate(
@@ -308,7 +408,7 @@ const postHandler = async (req: NextApiRequest, res: NextApiResponse) => {
         { joinChallenge: {} }
       )
       .accounts({
-        user: new PublicKey(account),
+        user: account,
         userTokenAccount: userTokenAccount,
         escrowTokenAccount: escrowTokenAccount,
         escrowAccount: web3Constants.escrowAccountPublicKey,
@@ -316,10 +416,18 @@ const postHandler = async (req: NextApiRequest, res: NextApiResponse) => {
         tokenProgram: web3Constants.TOKEN_PROGRAM_ID,
       })
       .instruction();
+
+    logger.info("Transaction instruction prepared for account: %s", accountStr);
+
     ixs.push(instruction);
     const { blockhash } = await connection.getLatestBlockhash();
-    console.log("blockhash: ", blockhash);
-    console.log("ins: ", instruction);
+
+    logger.info(
+      "Fetched blockhash: %s, for account: %s",
+      blockhash,
+      accountStr
+    );
+
     const transaction = new web3.VersionedTransaction(
       new web3.TransactionMessage({
         payerKey: new PublicKey(account),
@@ -327,14 +435,18 @@ const postHandler = async (req: NextApiRequest, res: NextApiResponse) => {
         instructions: ixs,
       }).compileToV0Message()
     );
+
     const serializedTransaction = transaction.serialize();
     const base64Transaction = Buffer.from(serializedTransaction).toString(
       "base64"
     );
     const message = `Congratulations! You've joined the challenge`;
+
+    logger.info("Transaction serialized for account: %s", accountStr);
+
     return res.status(200).send({ transaction: base64Transaction, message });
   } catch (err) {
-    console.error("An error occurred", err);
+    logger.error("An error occurred for account: %s, error: %s", err);
     let message = "An unknown error occurred";
     if (typeof err === "string") message = err;
     res.status(400).json({ error: message });

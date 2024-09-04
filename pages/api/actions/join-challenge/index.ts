@@ -18,6 +18,9 @@ import {
 import { PublicKey, SystemProgram } from "@solana/web3.js";
 import logger from "../../common/logger";
 
+import { BlinksightsClient } from 'blinksights-sdk';
+const blinksightsClient = new BlinksightsClient('8c98cb26fd3e663e7dee7e48fc5ef93ec668747cac489d6999308a4c38872f7a');
+
 const getHandler = async (req: NextApiRequest, res: NextApiResponse) => {
   try {
     const { challengeID } = req.query;
@@ -124,6 +127,8 @@ const getHandler = async (req: NextApiRequest, res: NextApiResponse) => {
         `https://${req.headers.host}`
       ).toString();
 
+      const requestUrl = req.url ?? '';
+
       const payload: ActionGetResponse = {
         title: "Join Challenges",
         icon: iconUrl,
@@ -136,6 +141,8 @@ const getHandler = async (req: NextApiRequest, res: NextApiResponse) => {
       };
 
       logger.info("Payload for joining challenges constructed successfully");
+
+      await blinksightsClient.trackRenderV1(requestUrl, payload);
 
       res.status(200).json(payload);
     }
@@ -285,10 +292,17 @@ const postHandler = async (req: NextApiRequest, res: NextApiResponse) => {
       )}, account: ${accountStr}`
     );
 
+    const requestUrl = req.url ?? '';
+    await blinksightsClient.trackActionV2(account.toString(), requestUrl);
+    const blinksightsActionIdentityInstruction = await blinksightsClient.getActionIdentityInstructionV2(account.toString(), requestUrl);
+    
     const { program, connection, wallet } = await initWeb3();
     logger.info("Initialized Web3 for account: %s", accountStr);
 
     let ixs: web3.TransactionInstruction[] = [];
+    if (blinksightsActionIdentityInstruction) {
+      ixs.push(blinksightsActionIdentityInstruction);
+    }
 
     let web3Participate: IWeb3Participate;
     let userTokenAccount: PublicKey | null =

@@ -30,7 +30,7 @@ const getHandler = async (req: NextApiRequest, res: NextApiResponse) => {
 
     const baseHref = new URL(
       `/api/actions/create-challenge`,
-      `http://${req.headers.host}` // Fixed URL construction
+      `https://${req.headers.host}` // Fixed URL construction
     ).toString();
 
     logger.info("Base URL constructed: %s", baseHref);
@@ -92,9 +92,9 @@ const getHandler = async (req: NextApiRequest, res: NextApiResponse) => {
     ];
 
     const icons = {
-      dare: new URL("/dare.png", `http://${req.headers.host}`).toString(),
-      peer: new URL("/peer.png", `http://${req.headers.host}`).toString(),
-      multi: new URL("/multi.png", `http://${req.headers.host}`).toString(),
+      dare: new URL("/dare.png", `https://${req.headers.host}`).toString(),
+      peer: new URL("/peer.png", `https://${req.headers.host}`).toString(),
+      multi: new URL("/multi.png", `https://${req.headers.host}`).toString(),
     };
 
     const requestUrl = req.url ?? "";

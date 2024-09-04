@@ -26,7 +26,7 @@ interface NFTMetadata {
 const nftMetadata: NFTMetadata = {
   name: "My NFT",
   description: "This is a sample NFT",
-  image: "http://localhost:3000/Catoff-128.png",
+  image: "https://localhost:3000/Catoff-128.png",
 };
 
 const isEligible = (wallet: PublicKey): boolean => {
@@ -42,7 +42,7 @@ export default async function handler(
     try {
       const requestUrl = new URL(
         req.url as string,
-        `http://${req.headers.host}`
+        `https://${req.headers.host}`
       );
       const wallet = new PublicKey(requestUrl.searchParams.get("wallet")!);
 

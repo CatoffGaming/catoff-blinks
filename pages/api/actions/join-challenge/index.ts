@@ -48,7 +48,7 @@ const getHandler = async (req: NextApiRequest, res: NextApiResponse) => {
 
       const baseHref = new URL(
         `/api/actions/join-challenge`,
-        `http://${req.headers.host}`
+        `https://${req.headers.host}`
       ).toString();
 
       const actions = [
@@ -60,7 +60,7 @@ const getHandler = async (req: NextApiRequest, res: NextApiResponse) => {
 
       const iconUrl = new URL(
         "/logo.png",
-        `http://${req.headers.host}`
+        `https://${req.headers.host}`
       ).toString();
 
       const payload: ActionGetResponse = {
@@ -83,7 +83,7 @@ const getHandler = async (req: NextApiRequest, res: NextApiResponse) => {
     } else {
       const baseHref = new URL(
         `/api/actions/join-challenge`,
-        `http://${req.headers.host}`
+        `https://${req.headers.host}`
       ).toString();
 
       const actions: LinkedAction[] = [
@@ -121,7 +121,7 @@ const getHandler = async (req: NextApiRequest, res: NextApiResponse) => {
 
       const iconUrl = new URL(
         "/logo.png",
-        `http://${req.headers.host}`
+        `https://${req.headers.host}`
       ).toString();
 
       const payload: ActionGetResponse = {

@@ -21,7 +21,7 @@ import logger from "../../common/logger";
 import { BlinksightsClient } from 'blinksights-sdk';
 
 const BLINKS_INSIGHT_API_KEY = process.env.BLINKS_INSIGHT_API_KEY;
-const blinksightsClient = new BlinksightsClient(BLINKS_INSIGHT_API_KEY);
+const blinksightsClient = new BlinksightsClient(BLINKS_INSIGHT_API_KEY!);
 
 const getHandler = async (req: NextApiRequest, res: NextApiResponse) => {
   try {

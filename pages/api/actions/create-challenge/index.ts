@@ -387,7 +387,7 @@ const postHandler = async (req: NextApiRequest, res: NextApiResponse) => {
 
     logger.info(
       "Challenge created successfully with ID: %s",
-      externalApiResponse.data.ChallengeID
+      externalApiResponse.data.data.ChallengeID
     );
 
     const message = `Your challenge has been created successfully!\nJoin with blink: https://dial.to/devnet?action=solana-action%3Ahttps://join.catoff.xyz/api/actions/join-challenge?challengeID=${externalApiResponse.data.data.ChallengeID}\nOpen Catoff App: https://game.catoff.xyz/challenge/${externalApiResponse.data.data.ChallengeID}`;

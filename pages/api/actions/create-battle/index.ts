@@ -7,10 +7,9 @@ import { GAME_TYPE, getGameID } from "./types";
 import { initWeb3 } from "./helper";
 import { PublicKey, SystemProgram } from "@solana/web3.js";
 import {
-  CHALLENGE_CATEGORIES,
-  ICreateChallenge,
+  ICreateBattle,
   VERIFIED_CURRENCY,
-} from "../join-challenge/types";
+} from "../join-battle/types";
 import { BlinksightsClient } from "blinksights-sdk";
 import logger from "../../common/logger"; // Ensure logger is imported
 
@@ -41,6 +40,19 @@ const getHandler = async (req: NextApiRequest, res: NextApiResponse) => {
         href: `${baseHref}?participationtype=${participationtype}&wager={wager}&target={target}&startTime={startTime}&duration={duration}&name={name}&token={token}`, // Fixed template literal
         parameters: [
           {
+            name: "name", // field name
+            label: "Name your challenge", // text input placeholder
+          },
+          {
+            name: "description", // field name
+            label: "Description of your challenge", // text input placeholder
+          },
+          {
+            name: "maxParticipants", // field name
+            label: "Number Of Participants", // text input placeholder
+            type: "number",
+          },
+          {
             name: "token",
             label: "Choose Token",
             type: "radio",
@@ -65,28 +77,21 @@ const getHandler = async (req: NextApiRequest, res: NextApiResponse) => {
             ],
           },
           {
-            name: "name", // field name
-            label: "Name your challenge", // text input placeholder
-          },
-          {
-            name: "wager", // field name
-            label: "Wager amount", // text input placeholder
+            name: "betsWager", // field name
+            label: "Set Bets Wager?", // text input placeholder
             type: "number",
-          },
-          {
-            name: "target", // field name
-            label: "Target", // text input placeholder
-            type: "number",
-          },
-          {
-            name: "startTime", // field name
-            label: "Start the challenge in? e.g. 5m, 10m, 1h, 12h, 1d...", // text input placeholder
           },
           {
             name: "duration", // field name
-            label:
-              "Duration of the the challenge? e.g. 5m, 10m, 1h, 12h, 1d...", // text input placeholder
+            label:"Duration of the the challenge? e.g. 5m, 10m, 1h, 12h, 1d...", // text input placeholder
+            type: "number",
           },
+          {
+            name: "usernames", //too additional field
+            label: "Enter the Usernames", // text input placeholder
+            type: "text"
+          }, 
+        
         ],
       },
     ];
@@ -106,38 +111,10 @@ const getHandler = async (req: NextApiRequest, res: NextApiResponse) => {
         payload = await blinksightsClient.createActionGetResponseV1(
           requestUrl,
           {
-            title: `🚀 Create IRL Dares:`,
+            title: `🚀 Create Battles:`,
             icon: icons.dare,
             type: "action",
             description: `- Make daring IRL challenges for friends\n- Wager on who will step up or back down\n- Spectators can join with side bets and raise the stakes. Who will rise to the challenge? Dare, compete, win big! 💪🔥`,
-            label: "Create",
-            links: { actions },
-          }
-        );
-        break;
-      case 1:
-        logger.info("Creating payload for 1v1 Duel challenges");
-        payload = await blinksightsClient.createActionGetResponseV1(
-          requestUrl,
-          {
-            title: `🚀 Duel On!`,
-            icon: icons.peer,
-            type: "action",
-            description: `- Ignite 1v1 showdowns in fitness, sports, skills, or games\n- Wager on every clash in real-time\n- Spectators fuel the fire with side bets. Who will emerge victorious? Step up, compete, win! 🥊🔥🕹️🔥`,
-            label: "Create",
-            links: { actions },
-          }
-        );
-        break;
-      case 2:
-        logger.info("Creating payload for multiplayer challenges");
-        payload = await blinksightsClient.createActionGetResponseV1(
-          requestUrl,
-          {
-            title: `🚀 Battle Royale!`,
-            icon: icons.multi,
-            type: "action",
-            description: `- Launch multiplayer challenges from fitness to cooking to creativity\n- Wagers are pooled for high stakes and bigger winnings\n- Spectators sidebet on top contenders. Who will outlast and outshine? Gather your crew, compete, win big! 🏆🔥`,
             label: "Create",
             links: { actions },
           }
@@ -251,24 +228,14 @@ const postHandler = async (req: NextApiRequest, res: NextApiResponse) => {
     const durationInSeconds = Math.floor(durationMillis);
     const endTime = Math.floor(absoluteStartTime + durationMillis);
 
-    const participation_type = () => {
-      if (participationtype === "0") {
-        return "0v1";
-      } else if (participationtype === "1") {
-        return "1v1";
-      } else if (participationtype === "2") {
-        return "NvN";
-      }
-    };
-
     let aiGeneratedDescription: string;
     try {
-      logger.info("Generating AI description for challenge: %s", name);
+      logger.info("Generating AI description for battle: %s", name);
       const aiResponse = await axios.post(
         "https://ai-api.catoff.xyz/generate-description-x-api-key/",
         {
           prompt: `${name}`,
-          participation_type: participation_type(),
+          participation_type: "NvN", //only nvn needed
           result_type: "validator",
           additional_info: "",
         },
@@ -288,7 +255,7 @@ const postHandler = async (req: NextApiRequest, res: NextApiResponse) => {
 
     const gameId = getGameID(
       parseInt(participationtype as string),
-      GAME_TYPE.VALIDATOR
+      GAME_TYPE.VOTING
     );
 
     if (!gameId) {
@@ -300,20 +267,20 @@ const postHandler = async (req: NextApiRequest, res: NextApiResponse) => {
       return res.status(400).json({ error: "Game is not valid" });
     }
 
-    const createChallengeJson: ICreateChallenge = {
+    const maxParticipants = 10; // Replace 10 with the desired value
+    const createChallengeJson: ICreateBattle = {
       ChallengeName: name as string,
       ChallengeDescription: aiGeneratedDescription,
-      StartDate: absoluteStartTime, 
+      StartDate: absoluteStartTime,
       EndDate: endTime,
-      GameID: gameId, 
+      // GameID: gameId,
       Wager: parseFloat(wager as string),
       Target: parseFloat(target as string),
       IsPrivate: false,
       Currency: token as VERIFIED_CURRENCY,
-      ChallengeCategory: CHALLENGE_CATEGORIES.SOCIAL_MEDIA, 
       NFTMedia: "ipfsLink",
       Media: "placeholder",
-      UserAddress: account, 
+      UserAddress: account,
     };
 
     logger.info("Create challenge JSON: %o", createChallengeJson);

@@ -9,7 +9,7 @@ import { PublicKey, SystemProgram } from "@solana/web3.js";
 import {
   ICreateBattle,
   VERIFIED_CURRENCY,
-} from "../join-battle/types";
+} from "./types";
 import { BlinksightsClient } from "blinksights-sdk";
 import logger from "../../common/logger"; // Ensure logger is imported
 
@@ -28,16 +28,16 @@ const getHandler = async (req: NextApiRequest, res: NextApiResponse) => {
     );
 
     const baseHref = new URL(
-      `/api/actions/create-challenge`,
-      `https://${req.headers.host}` // Fixed URL construction
+      `/api/actions/create-poll`,
+      `http://${req.headers.host}` // Fixed URL construction
     ).toString();
 
     logger.info("Base URL constructed: %s", baseHref);
 
     const actions: LinkedAction[] = [
       {
-        label: "Create Challenge", // button text
-        href: `${baseHref}?participationtype=${participationtype}&wager={wager}&target={target}&startTime={startTime}&duration={duration}&name={name}&token={token}`, // Fixed template literal
+        label: "Create Poll", // button text
+        href: `${baseHref}?participationtype=${participationtype}&wager={wager}&description={description}&usernames={usernames}&duration={duration}&name={name}&token={token}`, // Fixed template literal
         parameters: [
           {
             name: "name", // field name
@@ -46,11 +46,6 @@ const getHandler = async (req: NextApiRequest, res: NextApiResponse) => {
           {
             name: "description", // field name
             label: "Description of your challenge", // text input placeholder
-          },
-          {
-            name: "maxParticipants", // field name
-            label: "Number Of Participants", // text input placeholder
-            type: "number",
           },
           {
             name: "token",
@@ -77,19 +72,16 @@ const getHandler = async (req: NextApiRequest, res: NextApiResponse) => {
             ],
           },
           {
-            name: "betsWager", // field name
+            name: "wager", // field name
             label: "Set Bets Wager?", // text input placeholder
-            type: "number",
           },
           {
             name: "duration", // field name
             label:"Duration of the the challenge? e.g. 5m, 10m, 1h, 12h, 1d...", // text input placeholder
-            type: "number",
           },
           {
             name: "usernames", //too additional field
-            label: "Enter the Usernames", // text input placeholder
-            type: "text"
+            label: "Enter the user names of the participants coma separated", // text input placeholder
           }, 
         
         ],
@@ -97,9 +89,7 @@ const getHandler = async (req: NextApiRequest, res: NextApiResponse) => {
     ];
 
     const icons = {
-      dare: new URL("/dare.png", `https://${req.headers.host}`).toString(),
-      peer: new URL("/peer.png", `https://${req.headers.host}`).toString(),
-      multi: new URL("/multi.png", `https://${req.headers.host}`).toString(),
+      battleVoting: new URL("/pollmeisterr.jpeg", `http://${req.headers.host}`).toString()
     };
 
     const requestUrl = req.url ?? "";
@@ -112,9 +102,9 @@ const getHandler = async (req: NextApiRequest, res: NextApiResponse) => {
           requestUrl,
           {
             title: `🚀 Create Battles:`,
-            icon: icons.dare,
+            icon: icons.battleVoting,
             type: "action",
-            description: `- Make daring IRL challenges for friends\n- Wager on who will step up or back down\n- Spectators can join with side bets and raise the stakes. Who will rise to the challenge? Dare, compete, win big! 💪🔥`,
+            description: `- Create Your Own Poll and Wager on the Results! Host exciting polls with friends, influencers, or any group you choose. Place wagers on each prediction and raise the stakes. Crown winners in debates, showdowns, or any fun competition. Every vote is a wager; who will come out on top?`,
             label: "Create",
             links: { actions },
           }
@@ -132,8 +122,9 @@ const getHandler = async (req: NextApiRequest, res: NextApiResponse) => {
 
     logger.info("Payload constructed successfully: %o", payload);
 
-    await blinksightsClient.trackRenderV1(requestUrl, payload); //Added blinksights tracker
 
+    await blinksightsClient.trackRenderV1(requestUrl, payload); //Added blinksights tracker
+    
     res.status(200).json(payload);
   } catch (err) {
     logger.error("Error in getHandler: %s", err);
@@ -175,53 +166,52 @@ const postHandler = async (req: NextApiRequest, res: NextApiResponse) => {
 
     const {
       name,
+      description,
       wager,
-      target,
-      startTime,
       duration,
       participationtype,
       token,
+      usernames,
     } = req.query;
 
     logger.info("Received query parameters: %o", {
       name,
+      description,
       wager,
-      target,
-      startTime,
       duration,
       participationtype,
       token,
+      usernames
     });
 
-    const startTimeMs = new Date(startTime as string).getTime();
+    const startTimeMs =  Date.now();
     if (
       !name ||
       !wager ||
-      !target ||
-      !startTime ||
+      !description||
       !duration ||
       !participationtype ||
-      !token
+      !token ||
+      !usernames
     ) {
       logger.error("Missing required parameters: %o", {
         name,
+        description,
         wager,
-        target,
-        startTime,
         duration,
         participationtype,
         token,
+        usernames
       });
       return res.status(400).json({ error: "Missing required parameters" });
     }
-
     const accountPublicKey = new PublicKey(account);
     logger.info(
       "Public key (account) parsed successfully: %s",
       accountPublicKey.toString()
     );
 
-    const startTimeMillis = parseRelativeTime(startTime as string); // e.g., 5m -> 300000 milliseconds
+    const startTimeMillis = startTimeMs; // e.g., 5m -> 300000 milliseconds
     const durationMillis = parseRelativeTime(duration as string); // e.g., 10m -> 600000 milliseconds
 
     const absoluteStartTime = Math.floor(Date.now() + startTimeMillis);
@@ -236,7 +226,7 @@ const postHandler = async (req: NextApiRequest, res: NextApiResponse) => {
         {
           prompt: `${name}`,
           participation_type: "NvN", //only nvn needed
-          result_type: "validator",
+          result_type: "voting",
           additional_info: "",
         },
         { timeout: 100000 }
@@ -255,42 +245,49 @@ const postHandler = async (req: NextApiRequest, res: NextApiResponse) => {
 
     const gameId = getGameID(
       parseInt(participationtype as string),
-      GAME_TYPE.VOTING
+      GAME_TYPE.BATTLE_VOTING
     );
 
     if (!gameId) {
       logger.error(
         `Game is not valid, with participation type: %s, gametype: %s`,
         participationtype,
-        GAME_TYPE.VALIDATOR
+        GAME_TYPE.BATTLE_VOTING
       );
       return res.status(400).json({ error: "Game is not valid" });
     }
+    const userNames = (usernames as string).split(',').map(s => s.trim());
 
     const maxParticipants = 10; // Replace 10 with the desired value
-    const createChallengeJson: ICreateBattle = {
+    const createBattleJson: ICreateBattle = {
       ChallengeName: name as string,
       ChallengeDescription: aiGeneratedDescription,
       StartDate: absoluteStartTime,
       EndDate: endTime,
-      // GameID: gameId,
-      Wager: parseFloat(wager as string),
-      Target: parseFloat(target as string),
+      GameID: gameId,
+      Wager: 0,
+      Target: 0,
+      AllowSideBets: true,
+      SideWagerAmount: parseFloat(wager as string),
+      Unit: "vote",
       IsPrivate: false,
       Currency: token as VERIFIED_CURRENCY,
+      ChallengeCategory: 'Event',
       NFTMedia: "ipfsLink",
       Media: "placeholder",
+      UserNames: userNames,
+      SubmissionMediaUrls: ['blinks','blinks'],
       UserAddress: account,
     };
 
-    logger.info("Create challenge JSON: %o", createChallengeJson);
+    logger.info("Create challenge JSON: %o", createBattleJson);
 
     let externalApiResponse: any;
     try {
       logger.info("Sending request to external API");
       externalApiResponse = await axios.post(
-        "https://apiv2.catoff.xyz/challenge",
-        createChallengeJson,
+        "http://localhost:3005/User/createBattle",
+        createBattleJson,
         {
           headers: {
             "x-api-key": partnerApiKey,
@@ -306,7 +303,6 @@ const postHandler = async (req: NextApiRequest, res: NextApiResponse) => {
       return res.status(500).json({ error: "Failed to create challenge" });
     }
 
-    const textInput = JSON.stringify(createChallengeJson);
 
     const requestUrl = req.url ?? "";
     await blinksightsClient.trackActionV2(

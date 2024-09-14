@@ -87,6 +87,7 @@ export enum GAME_TYPE {
   DIGITAL_PROOF = 2,
   VALIDATOR = 3,
   VOTING = 4,
+  BATTLE_VOTING = 5,
 }
 
 export enum ParticipationTypeMultiToken {
@@ -418,6 +419,27 @@ export interface IBattleById {
   Players: PlayerWithDetails[];
 }
 
+export interface ICreateBattle{
+  ChallengeName: string;
+  ChallengeDescription: string;
+  StartDate: number;
+  EndDate: number;
+  GameID: number;
+  Wager: number;
+  Target: number;
+  AllowSideBets: boolean;
+  Unit: string;
+  SideWagerAmount: number;
+  IsPrivate: boolean; //keep it always false
+  Currency: VERIFIED_CURRENCY; //keep it VERIFIED_CURRENCY.SOL //keep it CHALLENGE_CATEGORIES.SOCIAL_MEDIA
+  NFTMedia: string; // create using ai -> ipfs
+  Media: string; // baad mey
+  UserNames: string[];
+  SubmissionMediaUrls: string[];
+  UserAddress?: string;
+  ChallengeCategory: string;
+}
+
 export const getGameID = (participationType: PARTICIPATION_TYPE, gameType: GAME_TYPE): number | undefined => {
   const gameMapping: Record<string, number> = {
     [`${PARTICIPATION_TYPE.NVN}_${GAME_TYPE.STEPS}`]: 5,              // Pedometer Pandemonium
@@ -425,6 +447,7 @@ export const getGameID = (participationType: PARTICIPATION_TYPE, gameType: GAME_
     [`${PARTICIPATION_TYPE.NVN}_${GAME_TYPE.DIGITAL_PROOF}`]: 8,      // Twitter Analytics Views (nvn)
     [`${PARTICIPATION_TYPE.NVN}_${GAME_TYPE.VALIDATOR}`]: 10,         // Single Validator Based Game (nvn)
     [`${PARTICIPATION_TYPE.NVN}_${GAME_TYPE.VOTING}`]: 14,            // Voting Based multi-player Game
+    [`${PARTICIPATION_TYPE.NVN}_${GAME_TYPE.BATTLE_VOTING}`]: 1, 
   };
 
   return gameMapping[`${participationType}_${gameType}`];

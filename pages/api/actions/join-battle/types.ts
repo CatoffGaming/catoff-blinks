@@ -406,13 +406,14 @@ export interface ICreateBattle {
   ChallengeDescription: string;
   StartDate: number;
   EndDate: number;
-  // GameID: number;
+  GameID: number;
   Wager: number;
   Target: number;
   IsPrivate: boolean; //keep it always false
   Currency: VERIFIED_CURRENCY; //keep it VERIFIED_CURRENCY.SOL //keep it CHALLENGE_CATEGORIES.SOCIAL_MEDIA
   NFTMedia: string; // create using ai -> ipfs
   Media: string; // baad mey
+  
   UserAddress?: string;
 }
 

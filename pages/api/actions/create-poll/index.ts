@@ -270,7 +270,7 @@ const postHandler = async (req: NextApiRequest, res: NextApiResponse) => {
     try {
       logger.info("Sending request to external API");
       externalApiResponse = await axios.post(
-        "https://apiv2.catoff.xyz/createBattle",
+        "https://apiv2.catoff.xyz/user/createBattle",
         createBattleJson,
         {
           headers: {

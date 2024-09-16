@@ -19,17 +19,14 @@ const blinksightsClient = new BlinksightsClient(BLINKS_INSIGHT_API_KEY!);
 
 const getHandler = async (req: NextApiRequest, res: NextApiResponse) => {
   try {
-    const { participationtype } = req.query;
-    const participationType = Number(participationtype);
 
     logger.info(
-      "GET request received with participation type: %s",
-      participationType
+      "GET request received ",
     );
 
     const baseHref = new URL(
       `/api/actions/create-poll`,
-      `http://${req.headers.host}` // Fixed URL construction
+      `https://${req.headers.host}` // Fixed URL construction
     ).toString();
 
     logger.info("Base URL constructed: %s", baseHref);
@@ -37,7 +34,7 @@ const getHandler = async (req: NextApiRequest, res: NextApiResponse) => {
     const actions: LinkedAction[] = [
       {
         label: "Create Poll", // button text
-        href: `${baseHref}?participationtype=${participationtype}&wager={wager}&description={description}&usernames={usernames}&duration={duration}&name={name}&token={token}`, // Fixed template literal
+        href: `${baseHref}?wager={wager}&description={description}&usernames={usernames}&duration={duration}&name={name}&token={token}`, // Fixed template literal
         parameters: [
           {
             name: "name", // field name
@@ -89,16 +86,13 @@ const getHandler = async (req: NextApiRequest, res: NextApiResponse) => {
     ];
 
     const icons = {
-      battleVoting: new URL("/pollmeisterr.jpeg", `http://${req.headers.host}`).toString()
+      battleVoting: new URL("/pollmeisterr.jpeg", `https://${req.headers.host}`).toString()
     };
 
     const requestUrl = req.url ?? "";
     let payload = null;
-
-    switch (participationType) {
-      case 0:
-        logger.info("Creating payload for IRL Dares");
-        payload = await blinksightsClient.createActionGetResponseV1(
+    logger.info("Creating payload for IRL Dares");
+    payload = await blinksightsClient.createActionGetResponseV1(
           requestUrl,
           {
             title: `🚀 Create Battles:`,
@@ -108,12 +102,8 @@ const getHandler = async (req: NextApiRequest, res: NextApiResponse) => {
             label: "Create",
             links: { actions },
           }
-        );
-        break;
-      default:
-        logger.error("Invalid participation type: %s", participationType);
-        return res.status(400).json({ error: "Invalid participation type" });
-    }
+    );
+
 
     if (!payload) {
       logger.error("Payload construction failed");
@@ -169,7 +159,6 @@ const postHandler = async (req: NextApiRequest, res: NextApiResponse) => {
       description,
       wager,
       duration,
-      participationtype,
       token,
       usernames,
     } = req.query;
@@ -179,7 +168,6 @@ const postHandler = async (req: NextApiRequest, res: NextApiResponse) => {
       description,
       wager,
       duration,
-      participationtype,
       token,
       usernames
     });
@@ -190,7 +178,6 @@ const postHandler = async (req: NextApiRequest, res: NextApiResponse) => {
       !wager ||
       !description||
       !duration ||
-      !participationtype ||
       !token ||
       !usernames
     ) {
@@ -199,7 +186,6 @@ const postHandler = async (req: NextApiRequest, res: NextApiResponse) => {
         description,
         wager,
         duration,
-        participationtype,
         token,
         usernames
       });
@@ -211,11 +197,9 @@ const postHandler = async (req: NextApiRequest, res: NextApiResponse) => {
       accountPublicKey.toString()
     );
 
-    const startTimeMillis = startTimeMs; // e.g., 5m -> 300000 milliseconds
     const durationMillis = parseRelativeTime(duration as string); // e.g., 10m -> 600000 milliseconds
 
-    const absoluteStartTime = Math.floor(Date.now() + startTimeMillis);
-    const durationInSeconds = Math.floor(durationMillis);
+    const absoluteStartTime = Math.floor(Date.now());
     const endTime = Math.floor(absoluteStartTime + durationMillis);
 
     let aiGeneratedDescription: string;
@@ -227,7 +211,7 @@ const postHandler = async (req: NextApiRequest, res: NextApiResponse) => {
           prompt: `${name}`,
           participation_type: "NvN", //only nvn needed
           result_type: "voting",
-          additional_info: "",
+          additional_info: description as string,
         },
         { timeout: 100000 }
       );
@@ -244,14 +228,14 @@ const postHandler = async (req: NextApiRequest, res: NextApiResponse) => {
     }
 
     const gameId = getGameID(
-      parseInt(participationtype as string),
+      0, // NvN Particiaption Type Id
       GAME_TYPE.BATTLE_VOTING
     );
 
     if (!gameId) {
       logger.error(
         `Game is not valid, with participation type: %s, gametype: %s`,
-        participationtype,
+        0,
         GAME_TYPE.BATTLE_VOTING
       );
       return res.status(400).json({ error: "Game is not valid" });
@@ -286,7 +270,7 @@ const postHandler = async (req: NextApiRequest, res: NextApiResponse) => {
     try {
       logger.info("Sending request to external API");
       externalApiResponse = await axios.post(
-        "http://localhost:3005/User/createBattle",
+        "https://apiv2.catoff.xyz/createBattle",
         createBattleJson,
         {
           headers: {
@@ -353,7 +337,7 @@ const postHandler = async (req: NextApiRequest, res: NextApiResponse) => {
       externalApiResponse.data.data.ChallengeID
     );
 
-    const message = `Your challenge has been created successfully!\nJoin with blink: https://dial.to/devnet?action=solana-action%3Ahttps://join.catoff.xyz/api/actions/join-challenge?challengeID=${externalApiResponse.data.data.ChallengeID}\nOpen Catoff App: https://game.catoff.xyz/challenge/${externalApiResponse.data.data.ChallengeID}`;
+    const message = `Your challenge has been created successfully!\n Vote with blink: https://dial.to/devnet?action=solana-action%3Ahttps://join.catoff.xyz/api/actions/vote-challenge?challengeID=${externalApiResponse.data.data.ChallengeID}\nOpen Catoff App: https://game.catoff.xyz/challenge/${externalApiResponse.data.data.ChallengeID}`;
     return res.status(200).send({ transaction: base64Transaction, message });
   } catch (err) {
     logger.error("An error occurred in postHandler: %s", err);

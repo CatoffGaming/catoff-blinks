@@ -447,7 +447,7 @@ export const getGameID = (participationType: PARTICIPATION_TYPE, gameType: GAME_
     [`${PARTICIPATION_TYPE.NVN}_${GAME_TYPE.DIGITAL_PROOF}`]: 8,      // Twitter Analytics Views (nvn)
     [`${PARTICIPATION_TYPE.NVN}_${GAME_TYPE.VALIDATOR}`]: 10,         // Single Validator Based Game (nvn)
     [`${PARTICIPATION_TYPE.NVN}_${GAME_TYPE.VOTING}`]: 14,            // Voting Based multi-player Game
-    [`${PARTICIPATION_TYPE.NVN}_${GAME_TYPE.BATTLE_VOTING}`]: 1, 
+    [`${PARTICIPATION_TYPE.NVN}_${GAME_TYPE.BATTLE_VOTING}`]: 2, 
   };
 
   return gameMapping[`${participationType}_${gameType}`];

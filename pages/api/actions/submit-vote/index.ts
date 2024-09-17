@@ -1,46 +1,94 @@
 import {
-  ActionPostResponse,
-  ACTIONS_CORS_HEADERS,
-  createPostResponse,
   ActionGetResponse,
-  ActionPostRequest as SolanaActionPostRequest,
+  LinkedAction,
 } from "@solana/actions";
-import { Cubik } from "@cubik-so/sdk";
-import {
-  clusterApiUrl,
-  Connection,
-  PublicKey,
-  Transaction,
-  TransactionInstruction,
-} from "@solana/web3.js";
-import * as web3 from "@solana/web3.js";
-import BN from "bn.js";
-import type { NextApiRequest, NextApiResponse } from "next";
-import * as anchor from "@project-serum/anchor";
+import axios from "axios";
+import logger from "../../common/logger";
+import { BlinksightsClient } from 'blinksights-sdk';
 import nextCors from "nextjs-cors";
-import fetch from "node-fetch";
-import { connection, program, programId } from "./idl";
-// import generateCollageImageUrl from '../../../components/ImageConverter'
 
-
-interface CustomActionPostRequest extends SolanaActionPostRequest {
-  submission_id?: string | number | string[];
-}
+const BLINKS_INSIGHT_API_KEY = process.env.BLINKS_INSIGHT_API_KEY;
+const blinksightsClient = new BlinksightsClient(BLINKS_INSIGHT_API_KEY!);
 
 const getHandler = async (req: NextApiRequest, res: NextApiResponse) => {
   try {
-    const requestUrl = new URL(req.url as string, `https://${req.headers.host}`);
-    const challengeID = requestUrl.searchParams.get("challengeID");
+    const { challengeID } = req.query;
 
-    if (!challengeID) {
-      return res.status(400).json({
-        error: 'Missing "challengeID" parameter',
-      });
+    logger.info("GET Request received for side-bets/votes with challengeID: %s", challengeID);
+
+    if (challengeID) {
+      const challengeResponse = await axios.get(
+        `https://apiv2.catoff.xyz/challenge/${challengeID}`,
+        {
+          headers: {
+            accept: "application/json",
+          },
+        }
+      );
+
+      if (!challengeResponse.data.success) {
+        logger.error("Failed to fetch challenge details for challengeID: %s", challengeID);
+        throw new Error("Failed to fetch challenge details");
+      }
+
+      const challenge = challengeResponse.data.data;
+      logger.info("Fetched challenge details for challengeID: %s", challengeID);
+
+      const baseHref = new URL(`/api/actions/side-bets`, `https://${req.headers.host}`).toString();
+
+      const actions = challenge.Participants.map((participant: { PlayerID: number, SubmissionID: number }) => ({
+        label: `Place Side-Bet on player ${participant.PlayerID}`,
+        href: `${baseHref}?submissionId=${participant.SubmissionID}&challengeId=${challengeID}`,
+      }));
+
+      const iconUrl = new URL("/logo.png", `https://${req.headers.host}`).toString();
+
+      const payload: ActionGetResponse = {
+        title: "Place Your Side Bets or Votes",
+        icon: iconUrl,
+        description: `Place your side-bets or cast your votes on the challenge participants!`,
+        type: "action",
+        label: "Place Bet/Vote",
+        links: {
+          actions: actions,
+        },
+      };
+
+      logger.info("Payload constructed successfully for side-betting/voting on challengeID: %s", challengeID);
+
+      const requestUrl = req.url ?? '';
+      await blinksightsClient.trackRenderV1(requestUrl, payload);
+
+      res.status(200).json(payload);
+    } else {
+      res.status(400).json({ error: "Missing 'challengeID' parameter" });
+    }
+  } catch (err) {
+    logger.error("Error in side-bet/vote getHandler: %s", err);
+    res.status(400).json({ error: "An unknown error occurred" });
+  }
+};
+
+const postHandler = async (req: NextApiRequest, res: NextApiResponse) => {
+  try {
+    logger.info("POST Request received for side-bet/vote with body: %o", req.body);
+
+    const { account } = req.body;
+    const submissionId = req.query.submissionId;
+    const challengeId = req.query.challengeId;
+
+    if (!account || !submissionId || !challengeId) {
+      return res.status(400).json({ error: '"account", "submissionId", and "challengeId" are required' });
     }
 
-    // Ensure absolute URL for fetching submissions
-    const submissionsResponse = await fetch(
-      `https://apiv2.catoff.xyz/player/submissions/${challengeID}`,
+    const accountPublicKey = new PublicKey(account);
+    const challengeIdBN = new BN(challengeId);
+    const submissionIdBN = new BN(submissionId);
+
+    logger.info("Parsed account: %s, submissionId: %s, challengeId: %s", accountPublicKey.toString(), submissionId, challengeId);
+
+    const challengeResponse = await axios.get(
+      `https://apiv2.catoff.xyz/challenge/${challengeId}`,
       {
         headers: {
           accept: "application/json",
@@ -48,109 +96,63 @@ const getHandler = async (req: NextApiRequest, res: NextApiResponse) => {
       }
     );
 
-    if (!submissionsResponse.ok) {
-      throw new Error("Failed to fetch submissions");
+    if (!challengeResponse.data.success) {
+      logger.error("Failed to fetch challenge details for challengeId: %s", challengeId);
+      throw new Error("Failed to fetch challenge details");
     }
 
-    const responseJson = await submissionsResponse.json() as { data: any };
-    const { data: submissions } = responseJson;
-    // console.log(submissions);
-    const baseHref = new URL(
-      "/api/actions/submit-vote",
-      requestUrl.origin
-    ).toString();
+    const challenge = challengeResponse.data.data;
 
-    const actions = submissions.map((submission: { ID: number }) => ({
-      label: `Vote for Submission ${submission.ID}`,
-      href: `${baseHref}?submission_id=${submission.ID}`,
-    }));
+    logger.info("Fetched challenge details for side-betting/voting on challengeId: %s", challengeId);
 
-    const firstSubmissionMedia =
-      submissions.length > 0 && submissions[0].Player.Challenge.Media
-        ? submissions[0].Player.Challenge.Media
-        : "/solana_devs.jpg";
-        const iconUrl = new URL(firstSubmissionMedia, requestUrl.origin).toString();
-        const mediaUrls = submissions.map((submission: { MediaUrl: any }) => submission.MediaUrl);
-        const submissionids = submissions.map((submission: { ID: number }) => submission.ID)
-    // Generate collage image URL
-    // const collageImageUrl = await generateCollageImageUrl(mediaUrls , submissionids);
-
-    const payload: ActionGetResponse = {
-      title: "Vote for Submissions",
-      icon: iconUrl,
-      description: "Vote for a submission on-chain",
-      type: "action",
-      label: "Vote",
-      links: {
-        actions: actions,
-      },
-    };
-
-    res.status(200).json(payload);
-  } catch (err) {
-    console.error(err);
-    let message = "An unknown error occurred";
-    if (typeof err === "string") message = err;
-    res.status(400).json({ error: message });
-  }
-};
-
-const postHandler = async (req: NextApiRequest, res: NextApiResponse) => {
-  try {
-    const body: CustomActionPostRequest = req.body;
-
-    let submission_id: string | number | string[] | undefined =
-      body.submission_id || req.query.submission_id;
-
-    if (typeof submission_id === "undefined") {
-      return res.status(400).json({ error: '"submission_id" is required' });
+    let TOKEN_MINT_ADDRESS = web3Constants.USDC_MINT_ADDRESS;
+    switch (challenge.Currency) {
+      case "SOL":
+        TOKEN_MINT_ADDRESS = web3Constants.SOL_MINT_ADDRESS;
+        break;
+      case "BONK":
+        TOKEN_MINT_ADDRESS = web3Constants.BONK_MINT_ADDRESS;
+        break;
+      default:
+        break;
     }
 
-    if (Array.isArray(submission_id)) {
-      return res
-        .status(400)
-        .json({ error: '"submission_id" cannot be an array' });
-    }
+    const sideBetAmount = new BN(challenge.Wager).div(new BN(10));
 
-    const validSubmissionId: string | number =
-      typeof submission_id === "string" || typeof submission_id === "number"
-        ? submission_id
-        : String(submission_id);
+    const userTokenAccount = await getAssociatedTokenAccount(connection, accountPublicKey, TOKEN_MINT_ADDRESS);
+    const escrowTokenAccount = await getAssociatedTokenAccount(connection, web3Constants.escrowAccountPublicKey, TOKEN_MINT_ADDRESS);
 
-    let account: PublicKey;
-    try {
-      account = new PublicKey(body.account);
-    } catch (err) {
-      return res.status(400).json({ error: 'Invalid "account" provided' });
+    if (!userTokenAccount || !escrowTokenAccount) {
+      throw new Error("Unable to fetch token accounts");
     }
-    let ixs: web3.TransactionInstruction[] = [];
 
     const instruction = await program.methods
-      .submitVote(new anchor.BN(submission_id))
+      .participate("USDC", sideBetAmount, challengeIdBN, submissionIdBN)
       .accounts({
-        user: account,
+        user: accountPublicKey,
+        userTokenAccount: userTokenAccount,
+        escrowTokenAccount: escrowTokenAccount,
+        escrowAccount: web3Constants.escrowAccountPublicKey,
+        systemProgram: SystemProgram.programId,
+        tokenProgram: web3Constants.TOKEN_PROGRAM_ID,
       })
       .instruction();
 
-    ixs.push(instruction);
     const { blockhash } = await connection.getLatestBlockhash();
-    const transaction = new web3.VersionedTransaction(
-      new web3.TransactionMessage({
-        payerKey: new web3.PublicKey(account),
-        recentBlockhash: blockhash,
-        instructions: ixs,
-      }).compileToV0Message()
-    );
+    const transaction = new web3.Transaction().add(instruction);
+    transaction.recentBlockhash = blockhash;
+    transaction.feePayer = accountPublicKey;
 
     const serializedTransaction = transaction.serialize();
-    const base64Transaction = Buffer.from(serializedTransaction).toString(
-      "base64"
-    );
-    const message = `Thank you for your Vote`;
+    const base64Transaction = Buffer.from(serializedTransaction).toString("base64");
+
+    const message = `Your side-bet/vote has been placed!`;
+
+    logger.info("Transaction serialized successfully for account: %s", accountPublicKey.toString());
 
     return res.status(200).send({ transaction: base64Transaction, message });
   } catch (err) {
-    console.error(err);
+    logger.error("Error occurred in side-bet/vote postHandler: %s", err);
     let message = "An unknown error occurred";
     if (typeof err === "string") message = err;
     res.status(400).json({ error: message });
@@ -158,11 +160,10 @@ const postHandler = async (req: NextApiRequest, res: NextApiResponse) => {
 };
 
 export default async (req: NextApiRequest, res: NextApiResponse) => {
-  // Apply CORS middleware to all requests
   await nextCors(req, res, {
     methods: ["GET", "POST"],
-    origin: "*", // Change this to your frontend URL in production
-    optionsSuccessStatus: 200, // Some legacy browsers (IE11, various SmartTVs) choke on 204
+    origin: "*", // Change to your frontend URL in production
+    optionsSuccessStatus: 200,
   });
 
   if (req.method === "GET") {

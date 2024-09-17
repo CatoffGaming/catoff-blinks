@@ -26,7 +26,7 @@ const getHandler = async (req: NextApiRequest, res: NextApiResponse) => {
 
     const baseHref = new URL(
       `/api/actions/create-poll`,
-      `https://${req.headers.host}` // Fixed URL construction
+      `http://${req.headers.host}` // Fixed URL construction
     ).toString();
 
     logger.info("Base URL constructed: %s", baseHref);
@@ -82,7 +82,7 @@ const getHandler = async (req: NextApiRequest, res: NextApiResponse) => {
     ];
 
     const icons = {
-      battleVoting: new URL("/pollmeisterr.jpeg", `https://${req.headers.host}`).toString()
+      battleVoting: new URL("/pollmeisterr.jpeg", `http://${req.headers.host}`).toString()
     };
 
     const requestUrl = req.url ?? "";
@@ -244,7 +244,7 @@ const postHandler = async (req: NextApiRequest, res: NextApiResponse) => {
       Wager: 0,
       Target: 0,
       AllowSideBets: true,
-      SideWagerAmount: parseFloat(wager as string),
+      SideBetsWager: parseFloat(wager as string),
       Unit: "vote",
       IsPrivate: false,
       Currency: token as VERIFIED_CURRENCY,

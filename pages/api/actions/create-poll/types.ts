@@ -429,7 +429,7 @@ export interface ICreateBattle{
   Target: number;
   AllowSideBets: boolean;
   Unit: string;
-  SideWagerAmount: number;
+  SideBetsWager: number;
   IsPrivate: boolean; //keep it always false
   Currency: VERIFIED_CURRENCY; //keep it VERIFIED_CURRENCY.SOL //keep it CHALLENGE_CATEGORIES.SOCIAL_MEDIA
   NFTMedia: string; // create using ai -> ipfs

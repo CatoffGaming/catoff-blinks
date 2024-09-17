@@ -329,7 +329,7 @@ const postHandler = async (req: NextApiRequest, res: NextApiResponse) => {
       externalApiResponse.data.data.ChallengeID
     );
 
-    const message = `Your challenge has been created successfully!\n Vote with blink: https://dial.to/devnet?action=solana-action%3Ahttps://join.catoff.xyz/api/actions/vote-challenge?challengeID=${externalApiResponse.data.data.ChallengeID}\nOpen Catoff App: https://game.catoff.xyz/challenge/${externalApiResponse.data.data.ChallengeID}`;
+    const message = `Your challenge has been created successfully!`;
     return res.status(200).send({ transaction: base64Transaction, message });
   } catch (err) {
     logger.error("An error occurred in postHandler: %s", err);

@@ -34,19 +34,15 @@ const getHandler = async (req: NextApiRequest, res: NextApiResponse) => {
     const actions: LinkedAction[] = [
       {
         label: "Create Poll", // button text
-        href: `${baseHref}?wager={wager}&description={description}&usernames={usernames}&duration={duration}&name={name}&token={token}`, // Fixed template literal
+        href: `${baseHref}?wager={wager}&usernames={usernames}&duration={duration}&name={name}&token={token}`, // Fixed template literal
         parameters: [
           {
             name: "name", // field name
-            label: "Name your challenge", // text input placeholder
-          },
-          {
-            name: "description", // field name
-            label: "Description of your challenge", // text input placeholder
+            label: "Name your poll", // text input placeholder
           },
           {
             name: "token",
-            label: "Choose Token",
+            label: "Choose token",
             type: "radio",
             options: [
               {
@@ -70,15 +66,15 @@ const getHandler = async (req: NextApiRequest, res: NextApiResponse) => {
           },
           {
             name: "wager", // field name
-            label: "Set Bets Wager?", // text input placeholder
+            label: "Set wager amount", // text input placeholder
           },
           {
             name: "duration", // field name
-            label:"Duration of the the challenge? e.g. 5m, 10m, 1h, 12h, 1d...", // text input placeholder
+            label:"Duration of the poll. eg: 5m, 10m, 1h, 12h, 1d...", // text input placeholder
           },
           {
             name: "usernames", //too additional field
-            label: "Enter the user names of the participants coma separated", // text input placeholder
+            label: "Enter the voting options separated by a comma", // text input placeholder
           }, 
         
         ],
@@ -95,10 +91,10 @@ const getHandler = async (req: NextApiRequest, res: NextApiResponse) => {
     payload = await blinksightsClient.createActionGetResponseV1(
           requestUrl,
           {
-            title: `🚀 Create Battles:`,
+            title: `🚀 Create Your Own Poll and Wager on the Results!`,
             icon: icons.battleVoting,
             type: "action",
-            description: `- Create Your Own Poll and Wager on the Results! Host exciting polls with friends, influencers, or any group you choose. Place wagers on each prediction and raise the stakes. Crown winners in debates, showdowns, or any fun competition. Every vote is a wager; who will come out on top?`,
+            description: `  - Host exciting polls with friends, influencers, or any group you choose. \n   - Place wagers on each prediction and raise the stakes. \n   - Crown winners in debates, showdowns, or any fun competition.\nEvery vote is a wager; who will come out on top?`,
             label: "Create",
             links: { actions },
           }
@@ -156,7 +152,6 @@ const postHandler = async (req: NextApiRequest, res: NextApiResponse) => {
 
     const {
       name,
-      description,
       wager,
       duration,
       token,
@@ -165,7 +160,6 @@ const postHandler = async (req: NextApiRequest, res: NextApiResponse) => {
 
     logger.info("Received query parameters: %o", {
       name,
-      description,
       wager,
       duration,
       token,
@@ -176,14 +170,12 @@ const postHandler = async (req: NextApiRequest, res: NextApiResponse) => {
     if (
       !name ||
       !wager ||
-      !description||
       !duration ||
       !token ||
       !usernames
     ) {
       logger.error("Missing required parameters: %o", {
         name,
-        description,
         wager,
         duration,
         token,
@@ -211,7 +203,7 @@ const postHandler = async (req: NextApiRequest, res: NextApiResponse) => {
           prompt: `${name}`,
           participation_type: "NvN", //only nvn needed
           result_type: "voting",
-          additional_info: description as string,
+          additional_info: "",
         },
         { timeout: 100000 }
       );

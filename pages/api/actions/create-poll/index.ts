@@ -70,11 +70,11 @@ const getHandler = async (req: NextApiRequest, res: NextApiResponse) => {
           },
           {
             name: "duration", // field name
-            label:"Duration of the poll. eg: 5m, 10m, 1h, 12h, 1d...", // text input placeholder
+            label:"Duration of the poll. eg: 5m, 1h, 2d...", // text input placeholder
           },
           {
             name: "usernames", //too additional field
-            label: "Enter the voting options separated by a comma", // text input placeholder
+            label: "Enter options, separated by comma", // text input placeholder
           }, 
         
         ],

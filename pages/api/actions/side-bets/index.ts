@@ -5,7 +5,7 @@ import {
   ActionGetResponse,
   ActionPostRequest as SolanaActionPostRequest,
 } from "@solana/actions";
-import { Cubik } from "@cubik-so/sdk";
+// import { Cubik } from "@cubik-so/sdk";
 import {
   clusterApiUrl,
   Connection,

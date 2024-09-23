@@ -1,10 +1,13 @@
 import axios from "axios";
 
-export function Responsify<T>(req: Promise<ApiResponse<T>>, panic: boolean = false): Promise<T | ApiResponse<T>> {
+export function Responsify<T>(
+  req: Promise<ApiResponse<T>>,
+  panic: boolean = false
+): Promise<T | ApiResponse<T>> {
   return new Promise(async (resolve, reject) => {
     try {
       const response = await req;
-      
+
       if (!response.success) {
         if (panic) {
           // Throw an error if panic is true and success is false
@@ -23,7 +26,7 @@ export function Responsify<T>(req: Promise<ApiResponse<T>>, panic: boolean = fal
         reject(error);
       } else {
         // Handle unexpected errors
-        reject(new Error('Unexpected error occurred.'));
+        reject(new Error("Unexpected error occurred."));
       }
     }
   });
@@ -78,7 +81,7 @@ export enum CHALLENGE_CATEGORIES {
 }
 
 export enum PARTICIPATION_TYPE {
-  NVN ,
+  NVN,
 }
 
 export enum GAME_TYPE {
@@ -224,33 +227,6 @@ export interface PlayerWithDetails extends Player {
   pastChallengesWon: number;
   pastChallengesLost: number;
   bio: string | null;
-}
-
-export interface User {
-  UserID: number;
-  Email: string | null;
-  UserName: string | null;
-  Wallets: Wallet[];
-  WalletAddress: string | null;
-  Bio: string | null;
-  Tag: string | null;
-  Credits: number;
-  InvestedCredits: number | null;
-  ProfilePicture: string | null;
-  CoverHexCode: string | null;
-  Gender: GENDER | null;
-  Transactions: Transaction[];
-  SentTransactions: Transaction[];
-  UserConfig: UserConfig | null;
-  CreatedChallenges: Challenge[];
-  Players: Player[];
-  WithdrawRequests: WithdrawRequest[];
-  DepositRequests: DepositRequest[];
-  Notifications: Notification[];
-  VotedSubmissions: Submission[];
-  Betters: Better[];
-  createdAt: string;
-  updatedAt: string;
 }
 
 export interface Better {
@@ -419,7 +395,7 @@ export interface IBattleById {
   Players: PlayerWithDetails[];
 }
 
-export interface ICreateBattle{
+export interface ICreateBattle {
   ChallengeName: string;
   ChallengeDescription: string;
   StartDate: number;
@@ -440,15 +416,60 @@ export interface ICreateBattle{
   ChallengeCategory: string;
 }
 
-export const getGameID = (participationType: PARTICIPATION_TYPE, gameType: GAME_TYPE): number | undefined => {
+export const getGameID = (
+  participationType: PARTICIPATION_TYPE,
+  gameType: GAME_TYPE
+): number | undefined => {
   const gameMapping: Record<string, number> = {
-    [`${PARTICIPATION_TYPE.NVN}_${GAME_TYPE.STEPS}`]: 5,              // Pedometer Pandemonium
-    [`${PARTICIPATION_TYPE.NVN}_${GAME_TYPE.CALORIES}`]: 6,           // Calorie Conquest Community Edition
-    [`${PARTICIPATION_TYPE.NVN}_${GAME_TYPE.DIGITAL_PROOF}`]: 8,      // Twitter Analytics Views (nvn)
-    [`${PARTICIPATION_TYPE.NVN}_${GAME_TYPE.VALIDATOR}`]: 10,         // Single Validator Based Game (nvn)
-    [`${PARTICIPATION_TYPE.NVN}_${GAME_TYPE.VOTING}`]: 14,            // Voting Based multi-player Game
-    [`${PARTICIPATION_TYPE.NVN}_${GAME_TYPE.BATTLE_VOTING}`]: 2, 
+    [`${PARTICIPATION_TYPE.NVN}_${GAME_TYPE.STEPS}`]: 5, // Pedometer Pandemonium
+    [`${PARTICIPATION_TYPE.NVN}_${GAME_TYPE.CALORIES}`]: 6, // Calorie Conquest Community Edition
+    [`${PARTICIPATION_TYPE.NVN}_${GAME_TYPE.DIGITAL_PROOF}`]: 8, // Twitter Analytics Views (nvn)
+    [`${PARTICIPATION_TYPE.NVN}_${GAME_TYPE.VALIDATOR}`]: 10, // Single Validator Based Game (nvn)
+    [`${PARTICIPATION_TYPE.NVN}_${GAME_TYPE.VOTING}`]: 14, // Voting Based multi-player Game
+    [`${PARTICIPATION_TYPE.NVN}_${GAME_TYPE.BATTLE_VOTING}`]: 2,
   };
 
   return gameMapping[`${participationType}_${gameType}`];
 };
+
+export interface IGetChallengeByID {
+  ChallengeID: number;
+  ChallengeName: string;
+  ChallengeDescription: string;
+  ChallengePublicKey: string | null;
+  StartDate: number;
+  EndDate: number;
+  State: CHALLENGE_STATE;
+  PaymentProcessed: boolean;
+  MaxParticipants: number;
+  Media: string | null;
+  NFTMedia: string | null;
+  Wager: number;
+  Target: number;
+  Unit: string | null;
+  Category: CHALLENGE_CATEGORIES;
+  AllowSideBets: boolean;
+  SideBetsWager: number;
+  Slug: string | null;
+  IsPrivate: boolean;
+  AssetAddresses: string[];
+  OnChainState: ONCHAIN_STATE;
+  Currency: VERIFIED_CURRENCY;
+  ChallengeCreator: User;
+  Game: Game;
+  ChallengeWinner: User[];
+  Players: PlayerWithDetails[];
+}
+
+export interface PlayerWithDetails extends Player {
+  rank: number;
+  pastChallengesWon: number;
+  pastChallengesLost: number;
+  bio: string | null;
+}
+
+export interface SubmitVote {
+  ChallengeID: number;
+  SubmissionID: number;
+  UserAddress: string;
+}

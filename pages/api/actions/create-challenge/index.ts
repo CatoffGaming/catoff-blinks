@@ -30,7 +30,7 @@ const getHandler = async (req: NextApiRequest, res: NextApiResponse) => {
 
     const baseHref = new URL(
       `/api/actions/create-challenge`,
-      `https://${req.headers.host}` // Fixed URL construction
+      `http://${req.headers.host}` // Fixed URL construction
     ).toString();
 
     logger.info("Base URL constructed: %s", baseHref);

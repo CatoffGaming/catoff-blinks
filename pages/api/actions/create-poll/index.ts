@@ -3,7 +3,7 @@ import * as web3 from "@solana/web3.js";
 import type { NextApiRequest, NextApiResponse } from "next";
 import nextCors from "nextjs-cors";
 import axios from "axios";
-import { GAME_TYPE, getGameID } from "./types";
+import { GAME_TYPE, getGameID, PARTICIPATION_TYPE } from "./types";
 import { initWeb3 } from "./helper";
 import { PublicKey, SystemProgram } from "@solana/web3.js";
 import {
@@ -26,7 +26,7 @@ const getHandler = async (req: NextApiRequest, res: NextApiResponse) => {
 
     const baseHref = new URL(
       `/api/actions/create-poll`,
-      `https://${req.headers.host}` // Fixed URL construction
+      `http://${req.headers.host}` // Fixed URL construction
     ).toString();
 
     logger.info("Base URL constructed: %s", baseHref);
@@ -82,7 +82,7 @@ const getHandler = async (req: NextApiRequest, res: NextApiResponse) => {
     ];
 
     const icons = {
-      battleVoting: new URL("/pollmeisterr.jpeg", `https://${req.headers.host}`).toString()
+      battleVoting: new URL("/pollmeisterr.jpeg", `http://${req.headers.host}`).toString()
     };
 
     const requestUrl = req.url ?? "";
@@ -220,14 +220,14 @@ const postHandler = async (req: NextApiRequest, res: NextApiResponse) => {
     }
 
     const gameId = getGameID(
-      0, // NvN Particiaption Type Id
+      PARTICIPATION_TYPE.NVN, // NvN Particiaption Type Id
       GAME_TYPE.BATTLE_VOTING
     );
 
     if (!gameId) {
       logger.error(
         `Game is not valid, with participation type: %s, gametype: %s`,
-        0,
+        2,
         GAME_TYPE.BATTLE_VOTING
       );
       return res.status(400).json({ error: "Game is not valid" });

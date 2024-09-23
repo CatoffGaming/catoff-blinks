@@ -78,7 +78,9 @@ export enum CHALLENGE_CATEGORIES {
 }
 
 export enum PARTICIPATION_TYPE {
-  NVN ,
+  ZERO_VS_ONE = 0,
+  ONE_VS_ONE = 1,
+  NVN = 2,
 }
 
 export enum GAME_TYPE {
@@ -87,7 +89,7 @@ export enum GAME_TYPE {
   DIGITAL_PROOF = 2,
   VALIDATOR = 3,
   VOTING = 4,
-  BATTLE_VOTING = 5,
+  BATTLE_VOTING = 6,
 }
 
 export enum ParticipationTypeMultiToken {
@@ -447,7 +449,7 @@ export const getGameID = (participationType: PARTICIPATION_TYPE, gameType: GAME_
     [`${PARTICIPATION_TYPE.NVN}_${GAME_TYPE.DIGITAL_PROOF}`]: 8,      // Twitter Analytics Views (nvn)
     [`${PARTICIPATION_TYPE.NVN}_${GAME_TYPE.VALIDATOR}`]: 10,         // Single Validator Based Game (nvn)
     [`${PARTICIPATION_TYPE.NVN}_${GAME_TYPE.VOTING}`]: 14,            // Voting Based multi-player Game
-    [`${PARTICIPATION_TYPE.NVN}_${GAME_TYPE.BATTLE_VOTING}`]: 2, 
+    [`${PARTICIPATION_TYPE.NVN}_${GAME_TYPE.BATTLE_VOTING}`]: 17, 
   };
 
   return gameMapping[`${participationType}_${gameType}`];

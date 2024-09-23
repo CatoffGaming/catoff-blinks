@@ -9,7 +9,7 @@ import { PublicKey, SystemProgram } from "@solana/web3.js";
 import {
   ICreateBattle,
   VERIFIED_CURRENCY,
-} from "./types";
+} from "../create-poll/types";
 import { BlinksightsClient } from "blinksights-sdk";
 import logger from "../../common/logger"; // Ensure logger is imported
 
@@ -74,7 +74,7 @@ const getHandler = async (req: NextApiRequest, res: NextApiResponse) => {
           },
           {
             name: "usernames", //too additional field
-            label: "Enter options, separated by comma", // text input placeholder
+            label: "Enter options, separated by comma",
           }, 
         
         ],
@@ -300,7 +300,7 @@ const postHandler = async (req: NextApiRequest, res: NextApiResponse) => {
     }
 
     const instruction = await program.methods
-      .processStringInput("create-challenge.11", "textInput")
+      .processStringInput("create-poll.11", "textInput")
       .accounts({
         user: accountPublicKey,
         systemProgram: SystemProgram.programId,
@@ -329,7 +329,7 @@ const postHandler = async (req: NextApiRequest, res: NextApiResponse) => {
       externalApiResponse.data.data.ChallengeID
     );
 
-    const message = `Your challenge has been created successfully!`;
+    const message = `Your challenge has been created successfully!\nJoin with blink: https://dial.to/devnet?action=solana-action%3Ahttps://join.catoff.xyz/api/actions/submit-vote?challengeID=${externalApiResponse.data.data.ChallengeID}\nOpen Catoff App: https://game.catoff.xyz/createBattle/${externalApiResponse.data.data.ChallengeID}`;
     return res.status(200).send({ transaction: base64Transaction, message });
   } catch (err) {
     logger.error("An error occurred in postHandler: %s", err);

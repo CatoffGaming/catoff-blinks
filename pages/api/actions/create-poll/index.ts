@@ -34,7 +34,7 @@ const getHandler = async (req: NextApiRequest, res: NextApiResponse) => {
     const actions: LinkedAction[] = [
       {
         label: "Create Poll", // button text
-        href: `${baseHref}?wager={wager}&usernames={usernames}&duration={duration}&name={name}&token={token}`, // Fixed template literal
+        href: `${baseHref}?wager={wager}&usernames={usernames}&duration={duration}&name={name}&token={token}&media={media}`, // Fixed template literal
         parameters: [
           {
             name: "name", // field name

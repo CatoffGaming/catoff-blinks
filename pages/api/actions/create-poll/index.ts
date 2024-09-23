@@ -26,7 +26,7 @@ const getHandler = async (req: NextApiRequest, res: NextApiResponse) => {
 
     const baseHref = new URL(
       `/api/actions/create-poll`,
-      `http://${req.headers.host}` // Fixed URL construction
+      `https://${req.headers.host}` // Fixed URL construction
     ).toString();
 
     logger.info("Base URL constructed: %s", baseHref);
@@ -76,13 +76,18 @@ const getHandler = async (req: NextApiRequest, res: NextApiResponse) => {
             name: "usernames", //too additional field
             label: "Enter options, separated by comma",
           }, 
+          {
+            name: "media",  // New media field for adding image links
+            label: "Add media (optional)", 
+            type: "url", // Text input for the media URL
+          },
         
         ],
       },
     ];
 
     const icons = {
-      battleVoting: new URL("/pollmeisterr.jpeg", `http://${req.headers.host}`).toString()
+      battleVoting: new URL("/pollmeisterr.jpeg", `https://${req.headers.host}`).toString()
     };
 
     const requestUrl = req.url ?? "";
@@ -156,15 +161,22 @@ const postHandler = async (req: NextApiRequest, res: NextApiResponse) => {
       duration,
       token,
       usernames,
+      media,
     } = req.query;
+
+    console.log("Media URL received:", media);
 
     logger.info("Received query parameters: %o", {
       name,
       wager,
       duration,
       token,
-      usernames
+      usernames,
+      media,
     });
+
+    const mediaParam = Array.isArray(media) ? media[0] : media || "placeholder";  // Ensure media is a string
+
 
     const startTimeMs =  Date.now();
     if (
@@ -179,7 +191,8 @@ const postHandler = async (req: NextApiRequest, res: NextApiResponse) => {
         wager,
         duration,
         token,
-        usernames
+        usernames,
+        media,
       });
       return res.status(400).json({ error: "Missing required parameters" });
     }
@@ -250,11 +263,14 @@ const postHandler = async (req: NextApiRequest, res: NextApiResponse) => {
       Currency: token as VERIFIED_CURRENCY,
       ChallengeCategory: 'Event',
       NFTMedia: "ipfsLink",
-      Media: "placeholder",
+      Media: mediaParam,
       UserNames: userNames,
       SubmissionMediaUrls: ['blinks','blinks'],
       UserAddress: account,
     };
+
+    console.log("createBattleJson object:", createBattleJson);
+
 
     logger.info("Create challenge JSON: %o", createBattleJson);
 
@@ -329,7 +345,7 @@ const postHandler = async (req: NextApiRequest, res: NextApiResponse) => {
       externalApiResponse.data.data.ChallengeID
     );
 
-    const message = `Your challenge has been created successfully!\nJoin with blink: https://dial.to/devnet?action=solana-action%3Ahttps://join.catoff.xyz/api/actions/submit-vote?challengeID=${externalApiResponse.data.data.ChallengeID}\nOpen Catoff App: https://game.catoff.xyz/createBattle/${externalApiResponse.data.data.ChallengeID}`;
+    const message = `Your poll has been created successfully! \n\n Cast your vote on: https://dial.to/devnet?action=solana-action%3Ahttp://localhost:3000/api/actions/submit-vote?challengeID=${externalApiResponse.data.data.ChallengeID}`;
     return res.status(200).send({ transaction: base64Transaction, message });
   } catch (err) {
     logger.error("An error occurred in postHandler: %s", err);

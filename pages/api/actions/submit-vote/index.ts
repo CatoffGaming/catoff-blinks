@@ -26,6 +26,17 @@ const BLINKS_INSIGHT_API_KEY = process.env.BLINKS_INSIGHT_API_KEY;
 const partnerApiKey = process.env.PARTNER_API_KEY;
 const blinksightsClient = new BlinksightsClient(BLINKS_INSIGHT_API_KEY!);
 
+function isValidUrl(url: string | null | undefined): boolean {
+  if (!url) return false; // Return false if the URL is null or undefined
+  try {
+    new URL(url);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+
 const getHandler = async (req: NextApiRequest, res: NextApiResponse) => {
   try {
     const { challengeID } = req.query;
@@ -85,38 +96,34 @@ const getHandler = async (req: NextApiRequest, res: NextApiResponse) => {
 
       const baseHref = new URL(
         `/api/actions/submit-vote`,
-        `http://${req.headers.host}` // Fixed URL construction
+        `https://${req.headers.host}` // Fixed URL construction
       ).toString();
 
       logger.info("Base URL constructed: %s", baseHref);
 
-      const options = Object.entries(submissionUserMap).map(([submissionID, username], index) => ({
-        label: username || `User ${index + 1}`, // Default label if username is null
-        value: submissionID, // Use submissionID as the value
-        selected: index === 0, // First one is selected by default
-      }));      
+      // const options = Object.entries(submissionUserMap).map(([submissionID, username], index) => ({
+      //   label: username || `User ${index + 1}`, // Default label if username is null
+      //   value: submissionID, // Use submissionID as the value
+      //   selected: index === 0, // First one is selected by default
+      // }));      
 
-      const actions: LinkedAction[] = [
-        {
-          label: "Submit Vote",
-          href: `${baseHref}?vote={vote}&challengeID=${challengeID}`,
-          parameters: [
-            {
-              name: "vote",
-              label: "Choose whom to vote",
-              type: "radio",
-              options: options,
-            },
-          ],
-        },
-      ];
+      const actions: LinkedAction[] = Object.entries(submissionUserMap).map(
+        ([submissionID, username], index) => ({
+          label: `Vote for ${username || `User ${index + 1}`}`, // Button label for each option
+          href: `${baseHref}?vote=${submissionID}&challengeID=${challengeID}`, // URL triggers vote submission directly
+          parameters: [] // No parameters needed, each button represents a direct vote for one submission
+        })
+      );
 
       const icons = {
-        battleVoting: new URL(
-          "/pollmeisterr.jpeg",
-          `https://${req.headers.host}`
-        ).toString(),
+        battleVoting: (challenge.Media && isValidUrl(challenge.Media))
+          ? challenge.Media
+          : new URL("/pollmeisterr.jpeg", `https://${req.headers.host}`).toString(),
       };
+      
+      
+      
+      
 
       const requestUrl = req.url ?? "";
       let payload = null;

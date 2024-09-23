@@ -345,7 +345,7 @@ const postHandler = async (req: NextApiRequest, res: NextApiResponse) => {
       externalApiResponse.data.data.ChallengeID
     );
 
-    const message = `Your poll has been created successfully! \n\n Cast your vote on: https://dial.to/devnet?action=solana-action%3Ahttp://localhost:3000/api/actions/submit-vote?challengeID=${externalApiResponse.data.data.ChallengeID}`;
+    const message = `Your poll has been created successfully! \n\n Cast your vote on: https://dial.to/devnet?action=solana-action%3Ahttps://join.catoff.xyz/api/actions/submit-vote?challengeID=${externalApiResponse.data.data.ChallengeID}`;
     return res.status(200).send({ transaction: base64Transaction, message });
   } catch (err) {
     logger.error("An error occurred in postHandler: %s", err);

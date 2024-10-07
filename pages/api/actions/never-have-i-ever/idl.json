@@ -1,0 +1,26 @@
+{
+    "version": "0.1.0",
+    "name": "catoff_contract",
+    "instructions": [
+      {
+        "name": "processStringInput",
+        "accounts": [{ "name": "user", "isMut": true, "isSigner": true }],
+        "args": [
+          { "name": "name", "type": "string" },
+          { "name": "value", "type": "string" }
+        ]
+      }
+    ],
+    "events": [
+      {
+        "name": "StringProcessedEvent",
+        "fields": [
+          { "name": "name", "type": "string", "index": false },
+          { "name": "value", "type": "string", "index": false },
+          { "name": "sender", "type": "publicKey", "index": false }
+        ]
+      }
+    ],
+    "errors": [{ "code": 6000, "name": "InvalidInput", "msg": "Invalid input." }]
+  }
+  

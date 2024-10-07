@@ -16,12 +16,12 @@ const getHandler = async (req: NextApiRequest, res: NextApiResponse) => {
   try {
     const requestUrl = req.url ?? "";
 
-    // Define the base question for "Never Have I Ever"
+    
     const baseHref = new URL(`/api/actions/never-have-i-ever`, `https://${req.headers.host}`).toString();
     const actions: LinkedAction[] = [
       {
         type: 'post',
-        label: 'Submit',  // Use a single "Submit" button for both questions
+        label: 'Submit',  
         href: `${baseHref}?method={method}&value={value}`,
         parameters: [
           {
@@ -32,7 +32,7 @@ const getHandler = async (req: NextApiRequest, res: NextApiResponse) => {
               {
                 label: "I Have",
                 value: "I Have",
-                selected: true,  // Optional: Set default selection if needed
+                
               },
               {
                 label: "I Have Never",
@@ -94,10 +94,10 @@ const postHandler = async (req: NextApiRequest, res: NextApiResponse) => {
       return res.status(400).json({ error: "Missing required parameters" });
     }
 
-    // Store the user's response in the database
+    
     await storeNeverHaveIEverResponse(accountPublicKey.toString(), answer1, answer2);
 
-    // Calculate the percentage of answers
+    
     const { cal1, cal2 } = await getAnswerPercentage();
 
     let winnerMessage: string;
@@ -107,7 +107,7 @@ const postHandler = async (req: NextApiRequest, res: NextApiResponse) => {
       winnerMessage = "Players who answered 'I Have Never' for question 2 are the winners!";
     }
 
-    // Execute on-chain transaction
+    
     const { program, connection, wallet } = await initWeb3();
     const instruction = await program.methods
       .processStringInput("never-have-i-ever", answer1)
@@ -140,7 +140,7 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
   try {
     await nextCors(req, res, {
       methods: ["GET", "POST"],
-      origin: "*", // Secure this in production
+      origin: "*", 
       optionsSuccessStatus: 200
     });
 

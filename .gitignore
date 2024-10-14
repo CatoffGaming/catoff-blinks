@@ -26,9 +26,9 @@ yarn-debug.log*
 yarn-error.log*
 
 # local env files
-.env*.local
-.env.local
-.envs
+.env*
+!.env.examle
+
 # vercel
 .vercel
 
@@ -36,9 +36,9 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-package-lock.json
-yarn.lock
-
-tokens.json
-.env
 *.log
+yarn.lock
+package-lock.json
+
+/trash/*
+trash

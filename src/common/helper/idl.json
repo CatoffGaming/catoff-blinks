@@ -1,0 +1,476 @@
+{
+  "version": "0.1.0",
+  "name": "multi_token",
+  "instructions": [
+    {
+      "name": "initializeEscrow",
+      "accounts": [
+        {
+          "name": "escrowAccount",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "owner",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "usdcMint",
+          "type": "publicKey"
+        },
+        {
+          "name": "bonkMint",
+          "type": "publicKey"
+        },
+        {
+          "name": "sendMint",
+          "type": "publicKey"
+        }
+      ]
+    },
+    {
+      "name": "participate",
+      "accounts": [
+        {
+          "name": "user",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "userTokenAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "escrowTokenAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "escrowAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "tokenProgram",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "token",
+          "type": "string"
+        },
+        {
+          "name": "amount",
+          "type": "u64"
+        },
+        {
+          "name": "challengeId",
+          "type": "u64"
+        },
+        {
+          "name": "playerId",
+          "type": {
+            "option": "u64"
+          }
+        },
+        {
+          "name": "participationType",
+          "type": {
+            "defined": "ParticipationType"
+          }
+        }
+      ]
+    },
+    {
+      "name": "falseSettlement",
+      "accounts": [
+        {
+          "name": "escrowAccount",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "escrowTokenAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "userAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "userTokenAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "authority",
+          "isMut": false,
+          "isSigner": true
+        },
+        {
+          "name": "tokenProgram",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "token",
+          "type": "string"
+        },
+        {
+          "name": "amount",
+          "type": "u64"
+        },
+        {
+          "name": "txnId",
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "name": "send",
+      "accounts": [
+        {
+          "name": "escrowAccount",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "escrowTokenAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "adminAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "adminTokenAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "authority",
+          "isMut": false,
+          "isSigner": true
+        },
+        {
+          "name": "tokenProgram",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "token",
+          "type": "string"
+        },
+        {
+          "name": "amount",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "settleChallenge",
+      "accounts": [
+        {
+          "name": "escrowAccount",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "escrowTokenAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "authority",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "tokenProgram",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "token",
+          "type": "string"
+        },
+        {
+          "name": "amounts",
+          "type": {
+            "vec": "u64"
+          }
+        },
+        {
+          "name": "challengeId",
+          "type": "u64"
+        }
+      ]
+    }
+  ],
+  "accounts": [
+    {
+      "name": "EscrowAccount",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "solBalance",
+            "type": "u64"
+          },
+          {
+            "name": "usdcBalance",
+            "type": "u64"
+          },
+          {
+            "name": "bonkBalance",
+            "type": "u64"
+          },
+          {
+            "name": "sendBalance",
+            "type": "u64"
+          },
+          {
+            "name": "authority",
+            "type": "publicKey"
+          },
+          {
+            "name": "usdcMint",
+            "type": "publicKey"
+          },
+          {
+            "name": "bonkMint",
+            "type": "publicKey"
+          },
+          {
+            "name": "sendMint",
+            "type": "publicKey"
+          }
+        ]
+      }
+    }
+  ],
+  "types": [
+    {
+      "name": "TokenType",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "SOL"
+          },
+          {
+            "name": "USDC"
+          },
+          {
+            "name": "BONK"
+          },
+          {
+            "name": "SEND"
+          }
+        ]
+      }
+    },
+    {
+      "name": "ParticipationType",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "SideBet"
+          },
+          {
+            "name": "JoinChallenge"
+          }
+        ]
+      }
+    }
+  ],
+  "events": [
+    {
+      "name": "ParticipateEvent",
+      "fields": [
+        {
+          "name": "user",
+          "type": "publicKey",
+          "index": false
+        },
+        {
+          "name": "token",
+          "type": "string",
+          "index": false
+        },
+        {
+          "name": "amount",
+          "type": "u64",
+          "index": false
+        },
+        {
+          "name": "challengeId",
+          "type": "u64",
+          "index": false
+        },
+        {
+          "name": "playerId",
+          "type": {
+            "option": "u64"
+          },
+          "index": false
+        },
+        {
+          "name": "participationType",
+          "type": {
+            "defined": "ParticipationType"
+          },
+          "index": false
+        }
+      ]
+    },
+    {
+      "name": "SettleChallengeEvent",
+      "fields": [
+        {
+          "name": "token",
+          "type": "string",
+          "index": false
+        },
+        {
+          "name": "amounts",
+          "type": {
+            "vec": "u64"
+          },
+          "index": false
+        },
+        {
+          "name": "challengeId",
+          "type": "u64",
+          "index": false
+        },
+        {
+          "name": "winners",
+          "type": {
+            "vec": "publicKey"
+          },
+          "index": false
+        }
+      ]
+    },
+    {
+      "name": "FalseSettlementEvent",
+      "fields": [
+        {
+          "name": "user",
+          "type": "publicKey",
+          "index": false
+        },
+        {
+          "name": "token",
+          "type": "string",
+          "index": false
+        },
+        {
+          "name": "amount",
+          "type": "u64",
+          "index": false
+        },
+        {
+          "name": "txnId",
+          "type": "string",
+          "index": false
+        }
+      ]
+    },
+    {
+      "name": "SendEvent",
+      "fields": [
+        {
+          "name": "to",
+          "type": "publicKey",
+          "index": false
+        },
+        {
+          "name": "token",
+          "type": "string",
+          "index": false
+        },
+        {
+          "name": "amount",
+          "type": "u64",
+          "index": false
+        }
+      ]
+    }
+  ],
+  "errors": [
+    {
+      "code": 6000,
+      "name": "Unauthorized",
+      "msg": "The requested operation is not authorized."
+    },
+    {
+      "code": 6001,
+      "name": "InsufficientFunds",
+      "msg": "Insufficient funds to complete the operation."
+    },
+    {
+      "code": 6002,
+      "name": "UnsupportedCurrency",
+      "msg": "The specified currency is not supported."
+    },
+    {
+      "code": 6003,
+      "name": "TransferFailed",
+      "msg": "Failed to perform the transfer."
+    },
+    {
+      "code": 6004,
+      "name": "InvalidInput",
+      "msg": "Invalid input provided."
+    },
+    {
+      "code": 6005,
+      "name": "InvalidAmount",
+      "msg": "Invalid amount provided."
+    },
+    {
+      "code": 6006,
+      "name": "TimeError",
+      "msg": "Failed to get current time."
+    },
+    {
+      "code": 6007,
+      "name": "InvalidAdminWallet",
+      "msg": "Invalid admin wallet public key."
+    },
+    {
+      "code": 6008,
+      "name": "InvalidMint",
+      "msg": "Invalid mint address provided."
+    }
+  ]
+}

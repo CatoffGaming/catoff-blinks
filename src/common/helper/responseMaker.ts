@@ -1,3 +1,5 @@
+import { ResultWithError } from "../types";
+
 export function jsonResponse(
   data: any,
   statusCode: number = 200,
@@ -9,5 +11,14 @@ export function jsonResponse(
       "Content-Type": "application/json",
       ...headers,
     },
+  });
+}
+
+export function Promisify<T>(req: Promise<ResultWithError>): Promise<T> {
+  return req.then(({ data, error }) => {
+    if (error || data === null) {
+      throw error ?? new Error("Received null data");
+    }
+    return data;
   });
 }

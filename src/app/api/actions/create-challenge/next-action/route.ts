@@ -5,8 +5,6 @@ import {
   CompletedAction,
 } from "@solana/actions";
 import { PublicKey } from "@solana/web3.js";
-import axios from "axios";
-import axiosRetry from "axios-retry";
 
 import {
   Challenge,
@@ -27,18 +25,8 @@ import {
   generateAIDescription,
 } from "@/common/utils/api.util";
 import { StatusCodes } from "http-status-codes";
-import { Promisify } from "@/common/helper/responseMaker";
+import { jsonResponse, Promisify } from "@/common/helper/responseMaker";
 
-axiosRetry(axios, {
-  retries: 3, // Number of retries
-  retryDelay: (retryCount: any) => {
-    return retryCount * 1000; // Delay between retries (in milliseconds)
-  },
-  retryCondition: (error: any) => {
-    // Retry on network errors or 5xx server errors
-    return error.response?.status >= 500 || axiosRetry.isNetworkError(error);
-  },
-});
 // create the standard headers for this route (including CORS)
 const headers = createActionHeaders();
 
@@ -133,16 +121,11 @@ export const POST = async (req: Request) => {
       description: message,
     };
 
-    return Response.json(payload, {
-      headers,
-    });
+    return jsonResponse(payload, StatusCodes.OK, headers);
   } catch (err) {
     logger.error(err);
     let actionError: ActionError = { message: "An unknown error occurred" };
     if (typeof err == "string") actionError.message = err;
-    return Response.json(actionError, {
-      status: 400,
-      headers,
-    });
+    return jsonResponse(actionError, StatusCodes.BAD_REQUEST, headers);
   }
 };

@@ -13,11 +13,9 @@ import { BN, web3 } from "@coral-xyz/anchor";
 import {
   CLUSTER_TYPES,
   IChallengeById,
-  IGetChallengeByID,
   IGetTxObject,
   JOIN_CHALLENGE_METHOD,
   ONCHAIN_PARTICIPATE_TYPE,
-  VERIFIED_CURRENCY,
 } from "@/common/types";
 import { getRequestParam } from "@/common/helper/getParams";
 import { ONCHAIN_CONFIG } from "@/common/helper/cluster.helper";
@@ -258,9 +256,6 @@ export const POST = async (req: Request) => {
     logger.error(err);
     let actionError: ActionError = { message: "An unknown error occurred" };
     if (typeof err == "string") actionError.message = err;
-    return Response.json(actionError, {
-      status: 400,
-      headers,
-    });
+    return jsonResponse(actionError, StatusCodes.BAD_REQUEST, headers);
   }
 };

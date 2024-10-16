@@ -105,8 +105,7 @@ export const POST = async (req: Request) => {
       multi: new URL("/multi.png", basicUrl).toString(),
     };
 
-    //TODO: fix this url
-    const message = `Your challenge has been created successfully!\nJoin with blink: https://dial.to/?action=solana-action:https://join.catoff.xyz/api/actions/join-challenge?clusterurl=${clusterurl}&challengeID=${challenge.ChallengeID}\nOpen Catoff App: https://game.catoff.xyz/challenge/${challenge.ChallengeID}`;
+    const message = `Your challenge has been created successfully!\nJoin with blink: https://dial.to/?action=solana-action%3Ahttps%3A%2F%2Fjoin.catoff.xyz%2Fapi%2Factions%2Fjoin-challenge%3Fclusterurl%3D${clusterurl}%26challengeID%3D${challenge.ChallengeID}&cluster=${clusterurl}\nOpen Catoff App: https://game.catoff.xyz/challenge/${challenge.ChallengeID}`;
     logger.info(`[Create challenge next action] final response: ${message}`);
     const payload: CompletedAction = {
       type: "completed",

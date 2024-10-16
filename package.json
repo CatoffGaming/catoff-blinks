@@ -3,10 +3,10 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "PORT=3020 next dev",
-    "build": "PORT=3020 next build",
-    "start": "PORT=3020 next start",
-    "lint": "PORT=3020 next lint"
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
   },
   "dependencies": {
     "@coral-xyz/anchor": "0.27.0",

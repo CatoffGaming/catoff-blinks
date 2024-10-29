@@ -8,6 +8,7 @@ import {
   ICreateChallenge,
   PARTICIPATION_TYPE,
   ResultWithError,
+  Submission,
 } from "@/common/types";
 import { ONCHAIN_CONFIG } from "@/common/helper/cluster.helper";
 import { IGenerateAIDescription } from "./apiReturn.types";
@@ -26,13 +27,18 @@ export async function generateAIDescription(
   participationType: PARTICIPATION_TYPE,
 ): Promise<ResultWithError> {
   try {
-    logger.info("Generating AI description for battle: %s", name);
+    logger.info("Generating AI description for challenge: %s", name);
     const response = await axios.post(
       "https://ai-api.catoff.xyz/generate-description-x-api-key/",
       {
         prompt: name,
-        participation_type: participationType === PARTICIPATION_TYPE.NVN ? "NvN" : "1v1",
-        result_type: "voting",
+        participation_type:
+          participationType === PARTICIPATION_TYPE.NVN
+            ? "NvN"
+            : participationType === PARTICIPATION_TYPE.ONE_VS_ONE
+            ? "1v1"
+            : "0v1",
+        result_type: "validator",
         additional_info: "",
       },
       { timeout: 200000 },
@@ -126,6 +132,29 @@ export async function getChallengeShareLink(
     return { data: result, error: null };
   } catch (error: any) {
     logger.error("Error fetching challenge share link: %s", error.stack);
+    return { data: null, error };
+  }
+}
+
+export async function getSubmissionsById(
+  clusterurl: CLUSTER_TYPES,
+  challengeId: number,
+): Promise<ResultWithError> {
+  const baseUrl = ONCHAIN_CONFIG[clusterurl].BackendURL;
+
+  try {
+    logger.info("Fetching submissions by ID: %s from %s", challengeId, baseUrl);
+    const response = await axios.get(`${baseUrl}/player/submissions/${challengeId}`, {
+      headers: {
+        "Content-Type": "application/json",
+      },
+      timeout: 100000,
+    });
+    const result: Submission[] = response.data.data;
+    logger.info("Successfully fetched submissions: %o", result);
+    return { data: result, error: null };
+  } catch (error: any) {
+    logger.error("Error fetching submissions by ID: %s", error.stack);
     return { data: null, error };
   }
 }

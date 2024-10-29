@@ -20,10 +20,7 @@ import logger from "@/common/logger";
 import { getRequestParam } from "@/common/helper/getParams";
 import { GenericError } from "@/common/helper/error";
 import { IGenerateAIDescription } from "@/common/utils/apiReturn.types";
-import {
-  createChallenge,
-  generateAIDescription,
-} from "@/common/utils/api.util";
+import { createChallenge, generateAIDescription } from "@/common/utils/api.util";
 import { StatusCodes } from "http-status-codes";
 import { jsonResponse, Promisify } from "@/common/helper/responseMaker";
 
@@ -41,27 +38,25 @@ export const OPTIONS = async () => Response.json(null, { headers });
 export const POST = async (req: Request) => {
   try {
     const requestUrl = new URL(req.url);
-    const clusterurl = getRequestParam<CLUSTER_TYPES>(requestUrl, "clusterurl");
+    const clusterurl = getRequestParam<CLUSTER_TYPES>(requestUrl, "clusterurl", true);
     const participationtype = getRequestParam<PARTICIPATION_TYPE>(
       requestUrl,
       "participationtype",
+      true,
     );
-    const name = getRequestParam<string>(requestUrl, "name");
-    const token = getRequestParam<VERIFIED_CURRENCY>(requestUrl, "token");
-    const wager = getRequestParam<number>(requestUrl, "wager");
+    const name = getRequestParam<string>(requestUrl, "name", true);
+    const token = getRequestParam<VERIFIED_CURRENCY>(requestUrl, "token", true);
+    const wager = getRequestParam<number>(requestUrl, "wager", true);
     // const target = getRequestParam<number>(requestUrl, "target");
-    const startDate = getRequestParam<number>(requestUrl, "startDate");
-    const endDate = getRequestParam<number>(requestUrl, "endDate");
+    const startDate = getRequestParam<number>(requestUrl, "startDate", true);
+    const endDate = getRequestParam<number>(requestUrl, "endDate", true);
 
     const body: NextActionPostRequest = await req.json();
     let account: PublicKey;
     try {
       account = new PublicKey(body.account);
     } catch {
-      throw new GenericError(
-        "Invalid account provided",
-        StatusCodes.BAD_REQUEST,
-      );
+      throw new GenericError("Invalid account provided", StatusCodes.BAD_REQUEST);
     }
 
     const { description } = await Promisify<IGenerateAIDescription>(
@@ -92,30 +87,22 @@ export const POST = async (req: Request) => {
       ChallengeCategory: CHALLENGE_CATEGORIES.SOCIAL_MEDIA,
       UserAddress: account.toString(),
     };
-    const challenge = await Promisify<Challenge>(
-      createChallenge(clusterurl, createChallengeJson),
-    );
+    const challenge = await Promisify<Challenge>(createChallenge(clusterurl, createChallengeJson));
     const basicUrl =
-      process.env.IS_PROD === "prod"
-        ? "https://join.catoff.xyz"
-        : new URL(req.url).origin;
+      process.env.IS_PROD === "prod" ? "https://join.catoff.xyz" : new URL(req.url).origin;
     const icons = {
       dare: new URL("/dare.png", basicUrl).toString(),
       peer: new URL("/peer.png", basicUrl).toString(),
       multi: new URL("/multi.png", basicUrl).toString(),
     };
 
-    const message = `Your challenge has been created successfully!\nJoin with blink: https://dial.to/?action=solana-action%3Ahttps%3A%2F%2Fjoin.catoff.xyz%2Fapi%2Factions%2Fjoin-challenge%3Fclusterurl%3D${clusterurl}%26challengeID%3D${challenge.ChallengeID}&cluster=${clusterurl}\nOpen Catoff App: https://game.catoff.xyz/challenge/${challenge.ChallengeID}`;
+    const message = `Your challenge has been created successfully!\nJoin with blink: \nhttps://dial.to/?action=solana-action%3Ahttps%3A%2F%2Fjoin.catoff.xyz%2Fapi%2Factions%2Fjoin-challenge%3Fclusterurl%3D${clusterurl}%26challengeID%3D${challenge.ChallengeID}&cluster=${clusterurl}\n\nOpen Catoff App: https://game.catoff.xyz/challenge/${challenge.ChallengeID}\n\nSpectators sidebet on top contenders. Who will outlast and outshine? Share Side-bets link: \nhttps://dial.to/?action=solana-action%3Ahttps%3A%2F%2Fjoin.catoff.xyz%2Fapi%2Factions%2Fside-bet%3Fclusterurl%3D${clusterurl}%26challengeID%3D${challenge.ChallengeID}&cluster=${clusterurl}`;
     logger.info(`[Create challenge next action] final response: ${message}`);
     const payload: CompletedAction = {
       type: "completed",
       title: "Your challenge has been created successfully!",
       icon:
-        participationtype === 0
-          ? icons.dare
-          : participationtype === 1
-          ? icons.peer
-          : icons.multi,
+        participationtype === 0 ? icons.dare : participationtype === 1 ? icons.peer : icons.multi,
       label: "Catoff Challenge Created",
       description: message,
     };

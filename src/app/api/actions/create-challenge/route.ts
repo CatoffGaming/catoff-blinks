@@ -6,6 +6,7 @@ import {
   createActionHeaders,
   ActionError,
   LinkedAction,
+  ActionParameterSelectable,
 } from "@solana/actions";
 import * as web3 from "@solana/web3.js";
 import { PublicKey } from "@solana/web3.js";
@@ -38,22 +39,75 @@ export const GET = async (req: Request) => {
       "clusterurl",
       false,
       Object.values(CLUSTER_TYPES),
-      CLUSTER_TYPES.DEVNET,
     );
+    const clusterOptions: ActionParameterSelectable<"radio">[] = clusterurl
+      ? []
+      : [
+          {
+            name: "clusterurl",
+            label: "Select Cluster",
+            type: "radio",
+            required: true,
+            options: [
+              {
+                label: "Mainnet",
+                value: CLUSTER_TYPES.MAINNET,
+                selected: true,
+              },
+              {
+                label: "Devnet",
+                value: CLUSTER_TYPES.DEVNET,
+              },
+            ],
+          },
+        ];
+
     const participationtype = getRequestParam<PARTICIPATION_TYPE>(
       requestUrl,
       "participationtype",
-      true,
-      [0, 1, 2],
+      false,
     );
+
+    const participationOptions: ActionParameterSelectable<"radio">[] = participationtype
+      ? []
+      : [
+          {
+            name: "participationtype",
+            label: "Select Type of Game",
+            type: "radio",
+            required: true,
+            options: [
+              {
+                label: "Multiplayer",
+                value: String(PARTICIPATION_TYPE.NVN),
+                selected: true,
+              },
+              {
+                label: "Play against a friend",
+                value: String(PARTICIPATION_TYPE.ONE_VS_ONE),
+              },
+              {
+                label: "Dare a friend (Set a target for a friend)",
+                value: String(PARTICIPATION_TYPE.ZERO_VS_ONE),
+              },
+            ],
+          },
+        ];
+
+    const href = `/api/actions/create-challenge?clusterurl=${
+      clusterurl ?? "{clusterurl}"
+    }&participationtype=${
+      participationtype ?? "{participationtype}"
+    }&name={name}&token={token}&wager={wager}&startTime={startTime}&duration={duration}`;
 
     const actions: LinkedAction[] = [
       {
         type: "transaction",
         label: "Create a catoff challenge",
-        // href: `/api/actions/create-challenge?clusterurl=${clusterurl}&participationtype=${participationtype}&name={name}&token={token}&wager={wager}&target={target}&startTime={startTime}&duration={duration}`,
-        href: `/api/actions/create-challenge?clusterurl=${clusterurl}&participationtype=${participationtype}&name={name}&token={token}&wager={wager}&startTime={startTime}&duration={duration}`,
+        href,
         parameters: [
+          ...clusterOptions,
+          ...participationOptions,
           {
             name: "name",
             label: "Name your challenge",
@@ -105,19 +159,18 @@ export const GET = async (req: Request) => {
     ];
 
     const basicUrl =
-      process.env.IS_PROD === "prod"
-        ? "https://join.catoff.xyz"
-        : new URL(req.url).origin;
+      process.env.IS_PROD === "prod" ? "https://join.catoff.xyz" : new URL(req.url).origin;
 
     const icons = {
       dare: new URL("/dare.png", basicUrl).toString(),
       peer: new URL("/peer.png", basicUrl).toString(),
       multi: new URL("/multi.png", basicUrl).toString(),
+      create: new URL("/create.gif", basicUrl).toString(),
     };
 
     let payload: ActionGetResponse;
 
-    switch (Number(participationtype)) {
+    switch (participationtype) {
       case 0:
         logger.info("Creating payload for IRL Dares");
         payload = {
@@ -152,11 +205,15 @@ export const GET = async (req: Request) => {
         };
         break;
       default:
-        logger.error("Invalid participation type: %s", participationtype);
-        throw new GenericError(
-          "Invalid participation type",
-          StatusCodes.BAD_REQUEST,
-        );
+        logger.info("Creating payload for unknown participation type challenges");
+        payload = {
+          title: `🚀 Create a Catoff Challenge!`,
+          icon: icons.create,
+          type: "action",
+          description: `- Launch a catoff challenges from fitness to cooking to creativity\n- Wagers are pooled for high stakes and bigger winnings\n- Spectators sidebet on top contenders. Who will outlast and outshine? Gather your crew, compete, win big! 🏆🔥`,
+          label: "Create",
+          links: { actions },
+        };
     }
 
     logger.info("Payload constructed successfully: %o", payload);
@@ -183,9 +240,8 @@ export const POST = async (req: Request) => {
     const clusterurl = getRequestParam<CLUSTER_TYPES>(
       requestUrl,
       "clusterurl",
-      false,
+      true,
       Object.values(CLUSTER_TYPES),
-      CLUSTER_TYPES.DEVNET,
     );
     const participationtype = getRequestParam<PARTICIPATION_TYPE>(
       requestUrl,
@@ -215,10 +271,7 @@ export const POST = async (req: Request) => {
 
     const startTimeStr = getRequestParam<string>(requestUrl, "startTime", true);
     const durationStr = getRequestParam<string>(requestUrl, "duration", true);
-    const { startDate, endDate } = calculateTimeRange(
-      startTimeStr,
-      durationStr,
-    );
+    const { startDate, endDate } = calculateTimeRange(startTimeStr, durationStr);
     // const startTime = parseRelativeTime(startTimeStr);
     // const duration = parseRelativeTime(durationStr);
 
@@ -230,10 +283,7 @@ export const POST = async (req: Request) => {
       logger.info(`Account PublicKey validated: ${account.toString()}`);
     } catch (err) {
       logger.error(`Invalid account public key: ${body.account}`);
-      throw new GenericError(
-        "Invalid account public key",
-        StatusCodes.BAD_REQUEST,
-      );
+      throw new GenericError("Invalid account public key", StatusCodes.BAD_REQUEST);
     }
 
     // Initialize connection and transaction

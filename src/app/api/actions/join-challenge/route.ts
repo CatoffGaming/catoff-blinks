@@ -6,11 +6,13 @@ import {
   createActionHeaders,
   ActionError,
   LinkedAction,
+  ActionParameterSelectable,
 } from "@solana/actions";
 import { PublicKey, Transaction } from "@solana/web3.js";
 import logger from "@/common/logger";
 import { BN, web3 } from "@coral-xyz/anchor";
 import {
+  CHALLENGE_STATE,
   CLUSTER_TYPES,
   IChallengeById,
   IGetTxObject,
@@ -33,18 +35,33 @@ export const GET = async (req: Request) => {
     logger.info("GET request received");
     const requestUrl = new URL(req.url);
     const challengeID = getRequestParam<number>(requestUrl, "challengeID", false);
-    const clusterurl = getRequestParam<CLUSTER_TYPES>(
-      requestUrl,
-      "clusterurl",
-      false,
-      Object.values(CLUSTER_TYPES),
-      CLUSTER_TYPES.DEVNET,
-    );
+    const clusterurl = getRequestParam<CLUSTER_TYPES>(requestUrl, "clusterurl", false);
+    const clusterOptions: ActionParameterSelectable<"radio">[] = clusterurl
+      ? []
+      : [
+          {
+            name: "clusterurl",
+            label: "Select Cluster",
+            type: "radio",
+            required: true,
+            options: [
+              {
+                label: "Devnet",
+                value: CLUSTER_TYPES.DEVNET,
+                selected: true,
+              },
+              {
+                label: "Mainnet",
+                value: CLUSTER_TYPES.MAINNET,
+              },
+            ],
+          },
+        ];
 
     const basicUrl =
       process.env.IS_PROD === "prod" ? "https://join.catoff.xyz" : new URL(req.url).origin;
 
-    if (challengeID) {
+    if (challengeID && clusterurl) {
       logger.info("Fetching challenge by ID: %s", challengeID);
 
       const { data: challenge, error } = await getChallengeById(clusterurl, challengeID);
@@ -79,12 +96,17 @@ export const GET = async (req: Request) => {
     } else {
       logger.info("Fetching default action payload for joining challenges");
 
+      const href = `/api/actions/join-challenge?clusterurl=${
+        clusterurl ?? "{clusterurl}"
+      }&method={method}&value={value}`;
+
       const actions: LinkedAction[] = [
         {
           type: "transaction",
           label: "Join Catoff Challenge",
-          href: `/api/actions/join-challenge?clusterurl=${clusterurl}&method={method}&value={value}`,
+          href,
           parameters: [
+            ...clusterOptions,
             {
               name: "method",
               label: "You have?",
@@ -151,9 +173,8 @@ export const POST = async (req: Request) => {
     const clusterurl = getRequestParam<CLUSTER_TYPES>(
       requestUrl,
       "clusterurl",
-      false,
+      true,
       Object.values(CLUSTER_TYPES),
-      CLUSTER_TYPES.DEVNET,
     );
     let challengeID = getRequestParam<number>(requestUrl, "challengeId", false);
     const method = getRequestParam<JOIN_CHALLENGE_METHOD>(requestUrl, "method", false);
@@ -171,7 +192,7 @@ export const POST = async (req: Request) => {
     ///////////Parse Phase///////////////
     /////////////////////////////////////
 
-    if (!challengeID) {
+    if (!challengeID && value) {
       switch (method) {
         case JOIN_CHALLENGE_METHOD.CHALLENGE_ID:
           challengeID = Number(value);
@@ -212,7 +233,15 @@ export const POST = async (req: Request) => {
       }
     }
 
+    if (challengeID === null) {
+      throw new GenericError("Challenge ID is required", StatusCodes.BAD_REQUEST);
+    }
+
     const challenge = await Promisify<IChallengeById>(getChallengeById(clusterurl, challengeID));
+
+    if (challenge.State !== CHALLENGE_STATE.UPCOMING) {
+      throw new GenericError(`Challenge is already ${challenge.State}`, StatusCodes.BAD_REQUEST);
+    }
 
     /////////////////////////////////////
     /////////Transaction Phase///////////
@@ -253,9 +282,11 @@ export const POST = async (req: Request) => {
     });
     return jsonResponse(payload, StatusCodes.OK, headers);
   } catch (err) {
-    logger.error(err);
+    logger.error("An error occurred in POST handler:", err);
     let actionError: ActionError = { message: "An unknown error occurred" };
-    if (typeof err == "string") actionError.message = err;
+    if (typeof err === "string") actionError.message = err;
+    else if (err instanceof GenericError) actionError.message = err.message;
+
     return jsonResponse(actionError, StatusCodes.BAD_REQUEST, headers);
   }
 };
